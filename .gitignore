@@ -37,3 +37,10 @@ android/app/debug.keystore
 # iOS остаётся на будущее
 ios/App/Pods/
 ios/App/build/
+
+# Скриншоты референсов и клиентские материалы — не храним в репозитории
+knowledge/скрины/
+knowledge/*.png
+knowledge/*.jpg
+knowledge/*.jpeg
+knowledge/*.webp

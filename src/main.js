@@ -1,4 +1,5 @@
 import './style.css';
+import './banner.css';
 import {
   canSelectStatus,
   company,
@@ -60,6 +61,7 @@ function init() {
   renderPhone();
   renderLogo();
   renderPromo();
+  renderFeatures();
   renderFind();
   applyTemplate();
   renderTelegramLinks();
@@ -608,6 +610,29 @@ function renderPromo() {
   setText('promo-title', promo.title);
   setText('promo-text', promo.text ?? '');
   box.hidden = false;
+}
+
+/** Плашки-преимущества в баннере: «Собственный парк техники» и т. п. */
+function renderFeatures() {
+  const list = $('banner-features');
+  if (!list) return;
+
+  const features = Array.isArray(company.features) ? company.features.filter(Boolean) : [];
+  if (features.length === 0) {
+    list.hidden = true;
+    return;
+  }
+
+  list.innerHTML = features
+    .map(
+      (feature) => `
+      <li class="banner__feature">
+        <span class="banner__check" aria-hidden="true">✓</span>
+        <span>${escapeHtml(feature)}</span>
+      </li>`,
+    )
+    .join('');
+  list.hidden = false;
 }
 
 function renderFind() {

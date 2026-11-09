@@ -13,7 +13,7 @@
     "phone": "+7 (343) 288-10-10",
     "address": "Екатеринбург, ул. Монтажников, 18",
     "workingHours": "Ежедневно 08:00–20:00",
-    "telegram": ""
+    "telegram": "@Cuba691"
   },
   "machines": [
     {
@@ -22,7 +22,8 @@
       "purpose": "Траншеи, фундамент и работы в ограниченном пространстве",
       "ratePerHour": 2500,
       "minShiftHours": 4,
-      "status": "available"
+      "status": "available",
+      "photo": "images/machines/mini-excavator.jpg"
     },
     {
       "id": "crawler-excavator",
@@ -30,7 +31,8 @@
       "purpose": "Котлованы, демонтаж и большие объёмы грунта",
       "ratePerHour": 3800,
       "minShiftHours": 8,
-      "status": "busy"
+      "status": "busy",
+      "photo": "images/machines/crawler-excavator.jpg"
     },
     {
       "id": "wheel-loader",
@@ -38,7 +40,8 @@
       "purpose": "Погрузка грунта, планировка и уборка территории",
       "ratePerHour": 3200,
       "minShiftHours": 4,
-      "status": "available"
+      "status": "available",
+      "photo": "images/machines/wheel-loader.jpg"
     },
     {
       "id": "manipulator",
@@ -46,17 +49,36 @@
       "purpose": "Перевозка материалов и погрузочные работы",
       "ratePerHour": 2800,
       "minShiftHours": 4,
-      "status": "confirm"
+      "status": "confirm",
+      "photo": "images/machines/manipulator.jpg"
     }
   ],
   "deliveryZones": [
-    { "id": "city", "name": "В пределах города", "price": 5000 },
-    { "id": "up30", "name": "До 30 км от города", "price": 9000 },
-    { "id": "over30", "name": "Более 30 км", "price": 14000 }
+    {
+      "id": "city",
+      "name": "В пределах города",
+      "price": 5000
+    },
+    {
+      "id": "up30",
+      "name": "До 30 км от города",
+      "price": 9000
+    },
+    {
+      "id": "over30",
+      "name": "Более 30 км",
+      "price": 14000
+    }
   ],
   "app": {
     "appId": "ru.stroymash.rental",
     "appName": "СТРОЙМАШ",
     "exeName": "StroyMash"
-  }
+  },
+  "features": [
+    "Собственный парк техники",
+    "Подача от 4 часов",
+    "Техника с оператором",
+    "Работаем без выходных"
+  ]
 }

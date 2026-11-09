@@ -87,8 +87,14 @@ describe('активный конфиг — аренда спецтехники 
     expect(total).toMatchObject({ hours: 4, minApplied: true, shift: 12800, total: 17800 });
   });
 
-  it('telegram не заполнен — кнопка чата скрыта', () => {
-    expect(telegramUsername(company)).toBe('');
+  it('телеграм-ник владельца нормализуется', () => {
+    expect(telegramUsername(company)).toBe('Cuba691');
+  });
+
+  it('у каждой машины есть фото', () => {
+    for (const machine of company.machines) {
+      expect(machine.photo).toMatch(/^images\/machines\/.+\.jpg$/);
+    }
   });
 
   it('данные приложения готовы к сборке', () => {
