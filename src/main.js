@@ -378,12 +378,7 @@ function onSubmit(event) {
     return;
   }
 
-  const link = pickTelegramLink({
-    username: telegram,
-    text,
-    pageUrl: globalThis.location?.href ?? '',
-    isNative,
-  });
+  const link = pickTelegramLink({ username: telegram, text, isNative });
 
   if (!link) {
     flashNote('Telegram не настроен — скопируйте заявку и отправьте вручную.');
@@ -395,7 +390,7 @@ function onSubmit(event) {
   } else {
     window.open(link, '_blank', 'noopener');
   }
-  flashNote('Открыл Telegram — отправьте заявку в чате.');
+  flashNote('Telegram открыт: проверьте текст и нажмите «Отправить» — заявка уйдёт владельцу.');
 }
 
 function buildServiceRequest({ name, phone }) {
@@ -409,6 +404,7 @@ function buildServiceRequest({ name, phone }) {
   const price = priceForLevel(service, level?.id);
 
   return buildBookingText({
+    title: 'Запись',
     companyName: company.companyName,
     name,
     phone,

@@ -3,7 +3,7 @@ import {
   buildBookingText,
   buildTelegramChatLink,
   buildTelegramDeepLink,
-  buildTelegramShareLink,
+  buildTelegramMessageLink,
   normalizeUsername,
   pickTelegramLink,
 } from '../../src/core/telegram.js';
@@ -33,6 +33,7 @@ describe('normalizeUsername', () => {
 describe('buildBookingText', () => {
   it('собирает все заполненные поля', () => {
     const text = buildBookingText({
+      title: 'Запись',
       companyName: 'OldBoy',
       name: 'Иван',
       phone: '+7 910 930-55-55',
@@ -63,6 +64,10 @@ describe('buildBookingText', () => {
   it('предупреждает, если ничего не заполнено', () => {
     expect(buildBookingText()).toContain('Пользователь не заполнил поля.');
   });
+
+  it('заголовок по умолчанию — «Заявка»', () => {
+    expect(buildBookingText({ companyName: 'Спецтехника' })).toContain('Заявка — Спецтехника');
+  });
 });
 
 describe('ссылки Telegram', () => {
@@ -82,11 +87,15 @@ describe('ссылки Telegram', () => {
     expect(buildTelegramChatLink('')).toBeNull();
   });
 
-  it('share-ссылка кодирует текст', () => {
-    const link = buildTelegramShareLink('Запись\nИмя: Иван', 'https://example.com');
-    expect(link).toContain('https://t.me/share/url?');
-    // URLSearchParams кодирует пробел как «+».
-    expect(decodeURIComponent(link.replaceAll('+', ' '))).toContain('Имя: Иван');
+  it('ссылка на чат владельца с готовым текстом', () => {
+    const link = buildTelegramMessageLink('@Cuba691', 'Запись\nИмя: Иван');
+    expect(link).toContain('https://t.me/Cuba691?text=');
+    expect(decodeURIComponent(link)).toContain('Имя: Иван');
+  });
+
+  it('без текста — просто чат', () => {
+    expect(buildTelegramMessageLink('@Cuba691')).toBe('https://t.me/Cuba691');
+    expect(buildTelegramMessageLink('')).toBeNull();
   });
 
   it('pickTelegramLink выбирает deep link для APK', () => {
@@ -95,10 +104,10 @@ describe('ссылки Telegram', () => {
     );
   });
 
-  it('pickTelegramLink выбирает share для браузера', () => {
-    expect(
-      pickTelegramLink({ username: '@Cuba691', text: 'Запись', pageUrl: 'https://x.dev', isNative: false }),
-    ).toContain('t.me/share/url');
+  it('pickTelegramLink ведёт в чат владельца в браузере', () => {
+    const link = pickTelegramLink({ username: '@Cuba691', text: 'Запись', isNative: false });
+    expect(link).toContain('https://t.me/Cuba691?text=');
+    expect(link).not.toContain('/share/url');
   });
 
   it('pickTelegramLink молчит без ника', () => {

@@ -26,6 +26,7 @@ export function normalizeUsername(raw) {
 
 /** Текст заявки. Пустые строки выбрасываем, чтобы не было «— undefined». */
 export function buildBookingText({
+  title = 'Заявка',
   companyName = '',
   name = '',
   phone = '',
@@ -39,7 +40,7 @@ export function buildBookingText({
   priceText = '',
   comment = '',
 } = {}) {
-  const lines = [companyName.trim() ? `Запись — ${companyName.trim()}` : 'Запись', ''];
+  const lines = [companyName.trim() ? `${title} — ${companyName.trim()}` : title, ''];
   if (name.trim()) lines.push(`Имя: ${name.trim()}`);
   if (phone.trim()) lines.push(`Телефон: ${phone.trim()}`);
   if (serviceName.trim()) lines.push(`Услуга: ${serviceName.trim()}`);
@@ -70,21 +71,27 @@ export function buildTelegramChatLink(username) {
   return user ? `https://t.me/${user}` : null;
 }
 
-/** https://t.me/share/... — веб-сценарий: выбор чата с готовым текстом. */
-export function buildTelegramShareLink(text = '', pageUrl = '') {
-  const params = new URLSearchParams();
-  if (text) params.set('text', text);
-  if (pageUrl) params.set('url', pageUrl);
-  return `https://t.me/share/url?${params.toString()}`;
+/**
+ * Веб-ссылка на чат владельца с готовым текстом: Telegram откроет именно его
+ * чат, клиент нажимает «Отправить» — заявка уходит с аккаунта клиента.
+ * Share-ссылка (t.me/share/url) не подходит: она даёт выбрать любого адресата.
+ */
+export function buildTelegramMessageLink(username, text = '') {
+  const user = normalizeUsername(username);
+  if (!user) return null;
+  const base = `https://t.me/${user}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
 }
 
 /**
- * Выбирает ссылку под платформу: в APK — deep link, в браузере — share.
+ * Выбирает ссылку под платформу: в APK — deep link `tg://`, в браузере —
+ * ссылка на чат владельца. Оба варианта открывают один и тот же чат
+ * с заполненной заявкой; отправляет её сам клиент.
  * Возвращает null, если контакт Telegram не заполнен.
  */
-export function pickTelegramLink({ username, text = '', pageUrl = '', isNative = false }) {
+export function pickTelegramLink({ username, text = '', isNative = false }) {
   if (!normalizeUsername(username)) return null;
   return isNative
     ? buildTelegramDeepLink(username, text)
-    : buildTelegramShareLink(text, pageUrl);
+    : buildTelegramMessageLink(username, text);
 }
