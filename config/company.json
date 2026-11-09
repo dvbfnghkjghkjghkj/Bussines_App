@@ -1,153 +1,80 @@
 {
-  "template": "services",
-  "companyName": "OldBoy",
-  "kind": "Барбершоп · Тверь",
-  "tagline": "Мужские стрижки, бритьё и уход за бородой",
+  "template": "rental",
+  "companyName": "Спецтехника Пример",
+  "kind": "Аренда спецтехники · Город",
+  "tagline": "Экскаваторы, погрузчики и самосвалы с оператором",
   "logo": "logo.svg",
-  "promo": {
-    "title": "−20 % на день рождения",
-    "text": "Скидка на услуги за 3 дня до и 3 дня после праздника. Скажите об этом администратору при записи."
-  },
   "contacts": {
-    "phone": "+7 (910) 930-55-55",
+    "phone": "+7 900 000-00-00",
     "whatsapp": "",
-    "telegram": "@Cuba691",
+    "telegram": "@example_rental",
     "email": "",
-    "address": "Тверь, Волоколамский просп., 25, корп. 1",
-    "entrance": "Вход в цоколь справа от бильярдной «МАГНАТ»",
-    "workingHours": "Пн, Ср–Вс: 10:00–21:00 · Вт — выходной",
-    "mapUrl": "https://yandex.com/maps/org/oldboy/44325624114/"
+    "address": "Город, улица, дом",
+    "entrance": "База: въезд с торца склада",
+    "workingHours": "Ежедневно 08:00–20:00",
+    "mapUrl": ""
   },
   "telegramChatId": "",
   "app": {
-    "appId": "ru.oldboy.barbershop",
-    "appName": "OldBoy",
-    "exeName": "OldBoy",
+    "appId": "ru.example.rental",
+    "appName": "Спецтехника",
+    "exeName": "Rental",
     "versionCode": 1,
     "versionName": "0.1.0"
   },
-  "levels": [
-    { "id": "barber", "name": "Барбер" },
-    { "id": "top", "name": "ТОП барбер" },
-    { "id": "premium", "name": "ПРЕМИУМ барбер" }
+  "machines": [
+    {
+      "id": "mini-excavator",
+      "name": "Мини-экскаватор",
+      "photo": "",
+      "purpose": "Котлованы, траншеи, небольшие площадки",
+      "ratePerHour": 2000,
+      "minShiftHours": 4,
+      "delivery": "Доставка по городу — от 3000 ₽",
+      "status": "available"
+    },
+    {
+      "id": "wheel-loader",
+      "name": "Фронтальный погрузчик",
+      "photo": "",
+      "purpose": "Погрузка грунта и стройматериалов",
+      "ratePerHour": 2600,
+      "minShiftHours": 4,
+      "delivery": "Доставка по городу — от 3500 ₽",
+      "status": "available"
+    },
+    {
+      "id": "dump-truck",
+      "name": "Самосвал 10 м³",
+      "photo": "",
+      "purpose": "Вывоз грунта и мусора, доставка песка",
+      "ratePerHour": 1800,
+      "minShiftHours": 4,
+      "delivery": "Доставка по городу — от 2500 ₽",
+      "status": "busy"
+    }
   ],
-  "services": [
+  "deliveryZones": [
     {
-      "id": "haircut",
-      "name": "Мужская стрижка",
-      "duration": 60,
-      "prices": { "barber": 1500, "top": 1800, "premium": 2200 }
+      "id": "center",
+      "name": "Центр",
+      "price": 0,
+      "freeFrom": 0,
+      "note": ""
     },
     {
-      "id": "machine-cut",
-      "name": "Стрижка под машинку (насадки)",
-      "duration": 30,
-      "prices": { "barber": 1100, "top": 1400, "premium": 1600 }
+      "id": "suburb",
+      "name": "Пригород до 20 км",
+      "price": 1500,
+      "freeFrom": 15000,
+      "note": ""
     },
     {
-      "id": "machine-cut-one",
-      "name": "Стрижка под машинку (одна насадка)",
-      "duration": 20,
-      "prices": { "barber": 700, "top": 900, "premium": 1200 }
-    },
-    {
-      "id": "kids-cut",
-      "name": "Детская стрижка (7–12 лет)",
-      "duration": 45,
-      "prices": { "barber": 1500, "top": 1800, "premium": 2200 }
-    },
-    {
-      "id": "edging",
-      "name": "Окантовка стрижки",
-      "duration": 20,
-      "prices": { "barber": 700, "top": 900, "premium": 1000 }
-    },
-    {
-      "id": "shave-face-shaver",
-      "name": "Бритьё лица (шейвером)",
-      "duration": 30,
-      "prices": { "barber": 700, "top": 900, "premium": 1100 }
-    },
-    {
-      "id": "shave-face-razor",
-      "name": "Бритьё лица (опасной бритвой)",
-      "duration": 45,
-      "prices": { "barber": 1000, "top": 1300, "premium": 1800 }
-    },
-    {
-      "id": "shave-head-shaver",
-      "name": "Бритьё головы (шейвером)",
-      "duration": 30,
-      "prices": { "barber": 800, "top": 1000, "premium": 1100 }
-    },
-    {
-      "id": "shave-head-razor",
-      "name": "Бритьё головы (опасной бритвой)",
-      "duration": 45,
-      "prices": { "barber": 1300, "top": 1600, "premium": 1800 }
-    },
-    {
-      "id": "beard-shape",
-      "name": "Коррекция бороды (машинкой)",
-      "duration": 30,
-      "prices": { "barber": 1000, "top": 1300, "premium": 1600 }
-    },
-    {
-      "id": "beard-razor",
-      "name": "Коррекция бороды с подбриванием",
-      "duration": 45,
-      "prices": { "barber": 1300, "top": 1600, "premium": 1900 }
-    },
-    {
-      "id": "grey-face",
-      "name": "Камуфляж седины (лицо)",
-      "duration": 30,
-      "prices": { "barber": 1300, "top": 1300, "premium": 1500 }
-    },
-    {
-      "id": "grey-head",
-      "name": "Камуфляж седины (голова)",
-      "duration": 30,
-      "prices": { "barber": 1500, "top": 1500, "premium": 1700 }
-    },
-    {
-      "id": "face-care",
-      "name": "Уход за кожей лица «Volcano GT»",
-      "duration": 30,
-      "price": 1200
-    },
-    {
-      "id": "hair-detox",
-      "name": "Детокс волос и кожи головы",
-      "duration": 15,
-      "price": 200,
-      "note": "Дополнение к стрижке"
-    },
-    {
-      "id": "black-mask",
-      "name": "Чёрная маска",
-      "duration": 20,
-      "price": 800
-    },
-    {
-      "id": "wax",
-      "name": "Удаление волос воском (1 зона)",
-      "duration": 15,
-      "price": 300
-    },
-    {
-      "id": "coloring",
-      "name": "Окрашивание",
-      "duration": 120,
-      "price": 5000,
-      "note": "От 5000 ₽, точная стоимость — на консультации"
-    },
-    {
-      "id": "perm",
-      "name": "Химическая завивка",
-      "duration": 120,
-      "price": 4000,
-      "note": "Только ПРЕМИУМ барбер"
+      "id": "far",
+      "name": "Дальше 20 км",
+      "price": 3000,
+      "freeFrom": 0,
+      "note": "Считаем по километражу"
     }
   ]
 }

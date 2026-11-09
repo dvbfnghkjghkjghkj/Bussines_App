@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   company,
-  findLevel,
-  findService,
+  findMachine,
+  findZone,
   getCompany,
   telegramUsername,
+  templateOf,
   validateCompany,
 } from '../../src/core/company.js';
-import { formatServicePrice, priceForLevel } from '../../src/core/pricing.js';
 
-describe('config/company.json', () => {
+describe('активный конфиг — аренда спецтехники', () => {
   it('валиден по схеме', () => {
     expect(validateCompany(company)).toEqual([]);
   });
@@ -18,77 +18,84 @@ describe('config/company.json', () => {
     expect(getCompany()).toBe(company);
   });
 
-  it('название и контакты заполнены реальными данными', () => {
-    expect(company.companyName).toBe('OldBoy');
+  it('выбран шаблон rental', () => {
+    expect(templateOf(company)).toBe('rental');
+  });
+
+  it('название и контакты заполнены', () => {
+    expect(company.companyName).toBeTruthy();
     expect(company.contacts.phone).toMatch(/\+7/);
-    expect(company.contacts.address).toContain('Тверь');
+    expect(company.contacts.address).toBeTruthy();
   });
 
-  it('есть три уровня мастеров', () => {
-    expect(company.levels).toHaveLength(3);
-    expect(company.levels.map((level) => level.id)).toEqual(['barber', 'top', 'premium']);
-    expect(findLevel('top')?.name).toBe('ТОП барбер');
-  });
-
-  it('все услуги имеют цену и id', () => {
-    expect(company.services.length).toBeGreaterThan(10);
-
-    for (const service of company.services) {
-      expect(service.id).toBeTruthy();
-      expect(service.name).toBeTruthy();
-      const price = formatServicePrice(service);
-      expect(price).not.toBe('цена по запросу');
-      expect(price).not.toContain('NaN');
+  it('в парке есть техника со ставкой и минимальной сменой', () => {
+    expect(company.machines.length).toBeGreaterThanOrEqual(3);
+    for (const machine of company.machines) {
+      expect(machine.id).toBeTruthy();
+      expect(machine.name).toBeTruthy();
+      expect(machine.ratePerHour).toBeGreaterThan(0);
+      expect(machine.minShiftHours).toBeGreaterThan(0);
     }
   });
 
-  it('мужская стрижка стоит по-разному у разных мастеров', () => {
-    const haircut = findService('haircut');
-    expect(haircut).not.toBeNull();
-    expect(priceForLevel(haircut, 'barber')).toBe(1500);
-    expect(priceForLevel(haircut, 'top')).toBe(1800);
-    expect(priceForLevel(haircut, 'premium')).toBe(2200);
-    expect(formatServicePrice(haircut)).toContain('2');
+  it('зоны доставки заданы и ищутся по id', () => {
+    expect(company.deliveryZones.length).toBeGreaterThan(0);
+    expect(findZone(company.deliveryZones[0].id)).toBe(company.deliveryZones[0]);
+  });
+
+  it('техника ищется по id', () => {
+    const first = company.machines[0];
+    expect(findMachine(first.id)).toBe(first);
   });
 
   it('телеграм-ник нормализуется', () => {
-    expect(telegramUsername(company)).toBe('Cuba691');
+    expect(telegramUsername(company)).toBeTruthy();
   });
 
   it('данные приложения готовы к сборке', () => {
-    expect(company.app.appId).toBe('ru.oldboy.barbershop');
-    expect(company.app.appName).toBe('OldBoy');
-    expect(company.app.exeName).toBe('OldBoy');
+    expect(company.app.appId).toMatch(/^ru\./);
+    expect(company.app.appName).toBeTruthy();
+    expect(company.app.exeName).toBeTruthy();
   });
 });
 
-describe('validateCompany отлавливает ошибки', () => {
+describe('validateCompany отлавливает ошибки аренды', () => {
   it('пустой конфиг', () => {
     expect(validateCompany(null)[0]).toContain('пуст');
   });
 
-  it('без услуг', () => {
-    const broken = { ...company, services: [] };
-    expect(validateCompany(broken).join(' ')).toContain('services');
+  it('без техники', () => {
+    const broken = { ...company, machines: [] };
+    expect(validateCompany(broken).join(' ')).toContain('machines');
   });
 
-  it('услуга без цены', () => {
+  it('техника без ставки', () => {
     const broken = {
       ...company,
-      services: [{ id: 'x', name: 'Услуга', duration: 30 }],
+      machines: [{ id: 'x', name: 'Машина', minShiftHours: 4 }],
     };
-    expect(validateCompany(broken).join(' ')).toContain('цена');
+    expect(validateCompany(broken).join(' ')).toContain('ratePerHour');
   });
 
-  it('повторяющийся id услуги', () => {
+  it('нулевая минимальная смена', () => {
     const broken = {
       ...company,
-      services: [
-        { id: 'x', name: 'Первая', price: 100 },
-        { id: 'x', name: 'Вторая', price: 200 },
-      ],
+      machines: [{ id: 'x', name: 'Машина', ratePerHour: 1000, minShiftHours: 0 }],
     };
-    expect(validateCompany(broken).join(' ')).toContain('повторяется');
+    expect(validateCompany(broken).join(' ')).toContain('minShiftHours');
+  });
+
+  it('неизвестный статус техники', () => {
+    const broken = {
+      ...company,
+      machines: [{ ...company.machines[0], status: 'в ремонте' }],
+    };
+    expect(validateCompany(broken).join(' ')).toContain('status');
+  });
+
+  it('без массива зон доставки', () => {
+    const broken = { ...company, deliveryZones: undefined };
+    expect(validateCompany(broken).join(' ')).toContain('deliveryZones');
   });
 
   it('плохой appId', () => {
