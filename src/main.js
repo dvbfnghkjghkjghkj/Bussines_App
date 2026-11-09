@@ -27,6 +27,17 @@ import {
   readOverrides,
   writeOverride,
 } from './core/overrides.js';
+import {
+  clearSession,
+  cloudConfig,
+  fetchPark,
+  isSessionFresh,
+  readSession,
+  refreshSession,
+  saveMachine,
+  signIn,
+  writeSession,
+} from './core/cloud.js';
 
 const template = templateOf(company);
 const isDemo = typeof __DEMO__ !== 'undefined' && __DEMO__;
@@ -34,6 +45,8 @@ const isNative = Boolean(window.Capacitor?.isNativePlatform?.());
 const telegram = telegramUsername(company);
 
 const storage = safeStorage();
+const cloud = cloudConfig(company);
+let cloudSession = readSession(storage);
 let overrides = readOverrides(storage);
 let machines = mergeMachines(company.machines ?? [], overrides);
 
@@ -69,6 +82,7 @@ function init() {
   wireOwner();
   route();
   if (isDemo) applyDemoMode();
+  void hydratePark();
 }
 
 function applyTemplate() {
@@ -474,7 +488,79 @@ function wireOwner() {
     updateSummary();
   });
 
+  $('owner-login')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void loginOwner();
+  });
+
+  $('owner-logout')?.addEventListener('click', () => {
+    cloudSession = null;
+    clearSession(storage);
+    showOwnerMessage('Вы вышли из панели — правки больше не сохраняются в облако.');
+    renderOwner();
+  });
+
   window.addEventListener('hashchange', route);
+}
+
+/** Тянет парк из Supabase: клиенты должны видеть актуальные цены сразу. */
+async function hydratePark() {
+  if (!cloud) return;
+  try {
+    overrides = await fetchPark(cloud);
+    machines = mergeMachines(company.machines ?? [], overrides);
+    syncViews();
+  } catch (error) {
+    showOwnerMessage(`Не удалось загрузить парк из облака: ${error.message}`);
+  }
+}
+
+function syncViews() {
+  renderFleet();
+  fillSelects();
+  updateSummary();
+  renderOwner();
+}
+
+async function loginOwner() {
+  if (!cloud) return;
+
+  const email = $('owner-email')?.value.trim() ?? '';
+  const password = $('owner-password')?.value ?? '';
+  const errorBox = $('owner-login-error');
+
+  try {
+    cloudSession = await signIn(cloud, email, password);
+    writeSession(storage, cloudSession);
+    if (errorBox) errorBox.hidden = true;
+    const form = $('owner-login');
+    if (form) form.reset();
+    showOwnerMessage('Вы вошли. Правки уходят в облако и видны клиентам.');
+    renderOwner();
+    await hydratePark();
+  } catch (error) {
+    if (errorBox) {
+      errorBox.textContent = `Не удалось войти: ${error.message}`;
+      errorBox.hidden = false;
+    }
+  }
+}
+
+/** Перед записью продлевает сессию, чтобы владелец не вылетал каждый час. */
+async function ensureOwnerSession() {
+  if (!cloudSession) return null;
+  if (isSessionFresh(cloudSession)) return cloudSession;
+
+  cloudSession = await refreshSession(cloud, cloudSession);
+  writeSession(storage, cloudSession);
+  return cloudSession;
+}
+
+function showOwnerMessage(text) {
+  const el = $('owner-message');
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = !text;
 }
 
 function route() {
@@ -486,6 +572,27 @@ function route() {
 }
 
 function renderOwner() {
+  const cloudMode = Boolean(cloud);
+  const signedIn = Boolean(cloudSession);
+
+  toggle('owner-login', cloudMode && !signedIn);
+  toggle('owner-account', cloudMode && signedIn);
+  // «Вернуть значения из конфига» — только для локального режима: в облаке
+  // сброс потребовал бы отдельной серверной операции.
+  toggle('owner-reset', !cloudMode);
+  setText(
+    'owner-account-text',
+    cloudMode && signedIn ? `Вы вошли как ${cloudSession?.email || 'владелец'}.` : '',
+  );
+  setText(
+    'owner-note',
+    cloudMode
+      ? 'Цены в рублях. Изменения сохраняются в облаке и сразу видны клиентам.'
+      : 'Цены указаны в рублях. Настройки сохраняются в этом браузере.',
+  );
+  const warn = $('owner-warn');
+  if (warn) warn.hidden = cloudMode;
+
   const stats = parkStats(machines);
   const list = $('owner-stats');
   if (list) {
@@ -533,20 +640,25 @@ function renderOwner() {
     )
     .join('');
 
+  const locked = cloudMode && !signedIn;
+  grid.querySelectorAll('input, select').forEach((input) => {
+    input.disabled = locked;
+  });
+
   grid.querySelectorAll('[data-owner-machine]').forEach((card) => {
     const id = card.dataset.ownerMachine;
     card.addEventListener('change', (event) => {
       const field = event.target?.dataset?.field;
-      if (!field) return;
+      if (!field || locked) return;
       const raw = event.target.value;
       const value = field === 'status' ? raw : Number(raw);
-      saveOverride(id, { [field]: value });
+      void saveOverride(id, { [field]: value });
     });
   });
 }
 
-function saveOverride(id, patch) {
-  overrides = writeOverride(storage, id, patch);
+/** Накладывает правки на парк и перерисовывает всё, что от него зависит. */
+function applyPark() {
   machines = mergeMachines(company.machines ?? [], overrides);
 
   const selected = machines.find((machine) => machine.id === state.selectedMachine);
@@ -558,6 +670,28 @@ function saveOverride(id, patch) {
   fillSelects();
   updateSummary();
   renderStats();
+}
+
+async function saveOverride(id, patch) {
+  overrides = writeOverride(storage, id, patch);
+  applyPark();
+
+  if (!cloud) return;
+
+  try {
+    const session = await ensureOwnerSession();
+    if (!session) {
+      showOwnerMessage('Войдите, чтобы сохранять изменения в облако.');
+      return;
+    }
+
+    const saved = await saveMachine(cloud, session.accessToken, id, patch);
+    overrides = writeOverride(storage, id, saved);
+    applyPark();
+    showOwnerMessage('Сохранено в облаке — клиенты видят новые значения.');
+  } catch (error) {
+    showOwnerMessage(`Не сохранилось в облаке: ${error.message}`);
+  }
 }
 
 function renderStats() {

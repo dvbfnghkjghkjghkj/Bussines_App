@@ -799,3 +799,46 @@ main {
   }
 }
 
+
+/* ---- вход владельца (облако) ---- */
+.owner__login {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  margin: 0 0 24px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+}
+
+.owner__login-title { margin: 0; font-weight: 600; }
+
+.owner__login-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.owner__login-error { margin: 0; font-size: 14px; color: #b91c1c; }
+
+.owner__account {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  margin: 0 0 24px;
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  border-radius: 14px;
+}
+
+.owner__message {
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  font-size: 14px;
+  background: rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  border-radius: 12px;
+}
