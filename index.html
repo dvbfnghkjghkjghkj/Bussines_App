@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f766e" />
-    <meta name="description" content="Одностраничное бизнес-приложение: услуги, техника, заявка в Telegram" />
+    <meta name="description" content="Запись в барбершоп: услуги, цены, адрес и заявка в Telegram" />
     <title>Загрузка…</title>
     <link rel="icon" href="./logo.svg" type="image/svg+xml" />
   </head>
@@ -22,34 +22,41 @@
 
     <main id="top">
       <section class="hero">
-        <p class="hero__eyebrow" id="hero-hours"></p>
-        <h1 class="hero__title" id="hero-title">Услуги компании</h1>
+        <p class="hero__eyebrow" id="hero-eyebrow"></p>
+        <h1 class="hero__title" id="hero-title">Барбершоп</h1>
         <p class="hero__lead" id="hero-lead"></p>
+        <p class="hero__hours" id="hero-hours"></p>
         <div class="hero__actions">
-          <a class="button button--primary" href="#request">Оставить заявку</a>
-          <a class="button button--ghost" id="hero-telegram" href="#request">Написать в Telegram</a>
+          <a class="button button--primary" href="#request">Записаться</a>
+          <a class="button button--ghost" id="hero-telegram" href="#request" hidden>Написать в Telegram</a>
         </div>
+        <aside class="promo" id="promo" hidden>
+          <strong class="promo__title" id="promo-title"></strong>
+          <span class="promo__text" id="promo-text"></span>
+        </aside>
       </section>
 
-      <section class="section" aria-labelledby="machines-title">
+      <section class="section" aria-labelledby="services-title">
         <div class="section__head">
-          <h2 id="machines-title">Техника и услуги</h2>
-          <p class="section__hint">Цены предварительные, точная стоимость — после уточнения задачи.</p>
+          <h2 id="services-title">Услуги и цены</h2>
+          <p class="section__hint">
+            Цена зависит от уровня мастера. Точную стоимость подтвердим при записи.
+          </p>
         </div>
-        <div id="machines" class="cards"></div>
+        <div id="services" class="cards"></div>
       </section>
 
-      <section class="section" id="zones-section" aria-labelledby="zones-title" hidden>
+      <section class="section" aria-labelledby="find-title">
         <div class="section__head">
-          <h2 id="zones-title">Доставка</h2>
+          <h2 id="find-title">Как найти</h2>
         </div>
-        <ul id="zones" class="zones"></ul>
+        <ul id="find" class="zones"></ul>
       </section>
 
       <section class="section section--form" id="request" aria-labelledby="request-title">
         <div class="section__head">
-          <h2 id="request-title">Заявка</h2>
-          <p class="section__hint">Ответим в рабочее время, обычно в течение часа.</p>
+          <h2 id="request-title">Запись</h2>
+          <p class="section__hint">Оставьте контакты — подтвердим время в рабочее время барбершопа.</p>
         </div>
 
         <form id="request-form" class="form" novalidate>
@@ -62,16 +69,20 @@
             <input id="field-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" required />
           </div>
           <div class="field">
-            <label for="field-machine">Техника</label>
-            <select id="field-machine" name="machine"></select>
+            <label for="field-service">Услуга</label>
+            <select id="field-service" name="service"></select>
           </div>
           <div class="field">
-            <label for="field-hours">Часов</label>
-            <input id="field-hours" name="hours" type="number" min="1" step="1" value="4" inputmode="numeric" />
+            <label for="field-level">Мастер</label>
+            <select id="field-level" name="level"></select>
+          </div>
+          <div class="field">
+            <label for="field-when">Дата и время</label>
+            <input id="field-when" name="when" type="datetime-local" />
           </div>
           <div class="field field--wide">
             <label for="field-comment">Комментарий</label>
-            <textarea id="field-comment" name="comment" rows="3" placeholder="Адрес, даты, задача"></textarea>
+            <textarea id="field-comment" name="comment" rows="3" placeholder="Пожелания, день рождения, детали"></textarea>
           </div>
 
           <p id="price-preview" class="price-preview" aria-live="polite"></p>
@@ -96,6 +107,7 @@
       <div class="footer__col">
         <span id="footer-hours"></span>
         <a id="footer-phone" href="tel:+70000000000">+7 000 000-00-00</a>
+        <a id="footer-map" href="#" target="_blank" rel="noopener">Яндекс Карты</a>
       </div>
     </footer>
 

@@ -6,22 +6,42 @@
  * с уже заполненным текстом, а веб — через share-ссылку t.me.
  */
 
-/** Нормализует ник: убирает @, t.me/ и лишние слэши. */
+/** Нормализует ник: убирает @, t.me/ и лишние слэши. Пустая строка — не ник. */
 export function normalizeUsername(raw) {
-  return String(raw ?? '')
-    .trim()
-    .replace(/^https?:\/\/t\.me\//i, '')
-    .replace(/^@/, '')
-    .replace(/\/+$/, '');
+  let value = String(raw ?? '').trim();
+  if (!value) return '';
+
+  for (const host of ['t.me', 'telegram.me', 'telegram.dog']) {
+    const marker = `${host}/`;
+    const index = value.indexOf(marker);
+    if (index >= 0) {
+      value = value.slice(index + marker.length);
+      break;
+    }
+  }
+
+  value = value.replace(/^@/, '').split(/[/?#]/)[0].trim();
+  return /^[A-Za-z0-9_]{4,32}$/.test(value) ? value : '';
 }
 
-/** Текст заявки. Пустые строки выбрасываем, чтобы не было «— undefined». */
-export function buildRequestText({ name = '', phone = '', machineName = '', hours = 0, comment = '' } = {}) {
-  const lines = ['Заявка с сайта', ''];
+/** Текст заявки на запись. Пустые строки выбрасываем, чтобы не было «— undefined». */
+export function buildBookingText({
+  companyName = '',
+  name = '',
+  phone = '',
+  serviceName = '',
+  levelName = '',
+  when = '',
+  priceText = '',
+  comment = '',
+} = {}) {
+  const lines = [companyName.trim() ? `Запись — ${companyName.trim()}` : 'Запись', ''];
   if (name.trim()) lines.push(`Имя: ${name.trim()}`);
   if (phone.trim()) lines.push(`Телефон: ${phone.trim()}`);
-  if (machineName.trim()) lines.push(`Техника: ${machineName.trim()}`);
-  if (Number.isFinite(hours) && hours > 0) lines.push(`Часов: ${hours}`);
+  if (serviceName.trim()) lines.push(`Услуга: ${serviceName.trim()}`);
+  if (levelName.trim()) lines.push(`Мастер: ${levelName.trim()}`);
+  if (when.trim()) lines.push(`Когда: ${when.trim()}`);
+  if (priceText.trim()) lines.push(`Цена: ${priceText.trim()}`);
   if (comment.trim()) lines.push(`Комментарий: ${comment.trim()}`);
   if (lines.length === 2) lines.push('Пользователь не заполнил поля.');
   return lines.join('\n');
@@ -43,9 +63,10 @@ export function buildTelegramChatLink(username) {
 }
 
 /** https://t.me/share/... — веб-сценарий: выбор чата с готовым текстом. */
-export function buildTelegramShareLink(pageUrl, text = '') {
-  const params = new URLSearchParams({ url: pageUrl ?? '' });
+export function buildTelegramShareLink(text = '', pageUrl = '') {
+  const params = new URLSearchParams();
   if (text) params.set('text', text);
+  if (pageUrl) params.set('url', pageUrl);
   return `https://t.me/share/url?${params.toString()}`;
 }
 
@@ -57,5 +78,5 @@ export function pickTelegramLink({ username, text = '', pageUrl = '', isNative =
   if (!normalizeUsername(username)) return null;
   return isNative
     ? buildTelegramDeepLink(username, text)
-    : buildTelegramShareLink(pageUrl, text);
+    : buildTelegramShareLink(text, pageUrl);
 }

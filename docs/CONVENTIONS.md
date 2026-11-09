@@ -12,7 +12,7 @@ my-app/
 ├── electron/          # оболочка ПК-версии
 ├── installer/         # шаблон Inno Setup
 ├── knowledge/         # база знаний (только чтение без подтверждения)
-├── public/            # логотип, фотографии техники
+├── public/            # логотип, изображения
 ├── scripts/           # генерация Android-конфига, сборка APK и установщика
 ├── src/
 │   ├── core/          # чистая логика: конфиг, цены, Telegram — без DOM
@@ -32,7 +32,7 @@ my-app/
 | Переменные и функции | `camelCase` | `calcShiftPrice`, `companyName` |
 | Константы | `UPPER_SNAKE_CASE` | `MAX_SHIFT_HOURS`, `DEFAULT_MIN_SHIFT_HOURS` |
 | CSS-классы | `kebab-case` | `.machine-card`, `.price-range` |
-| Ключи в JSON | `camelCase` | `ratePerHour`, `minShiftHours` |
+| Ключи в JSON | `camelCase` | `price`, `prices.barber` |
 | Тесты | `<модуль>.test.js` | `price-calculator.test.js` |
 | Android `appId` | `ru.company.app` | `ru.ivanov.spectehnika` |
 | Electron main | `main.cjs` (CommonJS) | `electron/main.cjs` |
@@ -67,11 +67,11 @@ my-app/
 Примеры:
 
 ```
-feat: добавить расчёт стоимости смены
-fix: исправить округление минимальной смены
+feat: добавить расчёт цены по уровню мастера
+fix: не терять услугу без цены в карточке
 docs: обновить STATE после интеграции Telegram
-test: покрыть property-тестами расчёт цены
-config: заполнить контакты и зоны доставки
+test: покрыть property-тестами диапазон цен
+config: заполнить услуги и уровни мастеров
 build: собирать установщик Windows в CI
 ```
 

@@ -36,7 +36,7 @@ src/ + config/company.json
 ```json
 "app": {
   "appId": "ru.ivanov.spectehnika",
-  "appName": "Иванов Спецтехника",
+  "appName": "OldBoy",
   "versionCode": 1,
   "versionName": "1.0.0"
 }

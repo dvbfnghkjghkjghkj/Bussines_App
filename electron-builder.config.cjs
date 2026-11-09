@@ -7,7 +7,14 @@ const company = require('./config/company.json');
 const appConfig = company.app ?? {};
 const appId = String(appConfig.appId ?? 'ru.example.businessapp');
 const productName = String(appConfig.appName ?? company.companyName ?? 'Business App');
-const executableName = appId.split('.').pop() || 'app';
+const executableName = resolveExeName(appConfig, appId);
+
+/** Имя exe: app.exeName, иначе последний сегмент appId. Логика дублирует build-installer.mjs. */
+function resolveExeName(app, identifier) {
+  const custom = String(app?.exeName ?? '').trim();
+  if (/^[A-Za-z0-9._-]+$/.test(custom)) return custom;
+  return identifier.split('.').pop() || 'app';
+}
 
 module.exports = {
   appId,

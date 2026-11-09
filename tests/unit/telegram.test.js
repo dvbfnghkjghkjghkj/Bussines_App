@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildRequestText,
+  buildBookingText,
   buildTelegramChatLink,
   buildTelegramDeepLink,
   buildTelegramShareLink,
@@ -9,95 +9,99 @@ import {
 } from '../../src/core/telegram.js';
 
 describe('normalizeUsername', () => {
-  it('снимает собаку', () => {
-    expect(normalizeUsername('@company')).toBe('company');
+  it('понимает ник с собакой', () => {
+    expect(normalizeUsername('@Cuba691')).toBe('Cuba691');
   });
 
-  it('снимает ссылку t.me и хвостовой слэш', () => {
-    expect(normalizeUsername('https://t.me/company/')).toBe('company');
+  it('понимает голый ник', () => {
+    expect(normalizeUsername('Cuba691')).toBe('Cuba691');
   });
 
-  it('на пустом значении отдаёт пустую строку', () => {
-    expect(normalizeUsername(undefined)).toBe('');
-    expect(normalizeUsername('   ')).toBe('');
+  it('понимает ссылку t.me', () => {
+    expect(normalizeUsername('https://t.me/Cuba691')).toBe('Cuba691');
+    expect(normalizeUsername('t.me/Cuba691/?start=1')).toBe('Cuba691');
+  });
+
+  it('отбрасывает не-никообразное', () => {
+    expect(normalizeUsername('')).toBe('');
+    expect(normalizeUsername('ab')).toBe('');
+    expect(normalizeUsername('+7 910 930-55-55')).toBe('');
+    expect(normalizeUsername('три слова')).toBe('');
   });
 });
 
-describe('buildRequestText', () => {
+describe('buildBookingText', () => {
   it('собирает все заполненные поля', () => {
-    const text = buildRequestText({
-      name: 'Анна',
-      phone: '+7 900 000-00-00',
-      machineName: 'Экскаватор',
-      hours: 6,
-      comment: 'Центр города',
+    const text = buildBookingText({
+      companyName: 'OldBoy',
+      name: 'Иван',
+      phone: '+7 910 930-55-55',
+      serviceName: 'Мужская стрижка',
+      levelName: 'ТОП барбер',
+      when: '10.11.2026, 14:30',
+      priceText: '1 800 ₽',
+      comment: 'Хочу к мастеру с бородой',
     });
 
-    expect(text).toContain('Имя: Анна');
-    expect(text).toContain('Телефон: +7 900 000-00-00');
-    expect(text).toContain('Техника: Экскаватор');
-    expect(text).toContain('Часов: 6');
-    expect(text).toContain('Комментарий: Центр города');
+    expect(text).toContain('Запись — OldBoy');
+    expect(text).toContain('Имя: Иван');
+    expect(text).toContain('Телефон: +7 910 930-55-55');
+    expect(text).toContain('Услуга: Мужская стрижка');
+    expect(text).toContain('Мастер: ТОП барбер');
+    expect(text).toContain('Когда: 10.11.2026, 14:30');
+    expect(text).toContain('Цена: 1 800 ₽');
+    expect(text).toContain('Комментарий: Хочу к мастеру с бородой');
   });
 
-  it('не выводит пустые строки и служебные undefined', () => {
-    const text = buildRequestText({ name: 'Анна' });
+  it('не добавляет пустые поля', () => {
+    const text = buildBookingText({ companyName: 'OldBoy', name: 'Иван' });
     expect(text).not.toContain('Телефон:');
+    expect(text).not.toContain('Услуга:');
     expect(text).not.toContain('undefined');
   });
 
-  it('подставляет заглушку, если полей нет совсем', () => {
-    expect(buildRequestText({})).toContain('Пользователь не заполнил поля.');
-  });
-
-  it('обрезает пробелы по краям', () => {
-    expect(buildRequestText({ name: '  Анна  ' })).toContain('Имя: Анна');
+  it('предупреждает, если ничего не заполнено', () => {
+    expect(buildBookingText()).toContain('Пользователь не заполнил поля.');
   });
 });
 
 describe('ссылки Telegram', () => {
-  it('строит deep link с закодированным текстом', () => {
-    const link = buildTelegramDeepLink('@company', 'Привет, мир');
-    expect(link.startsWith('tg://resolve?')).toBe(true);
-
-    const params = new URLSearchParams(link.split('?')[1]);
-    expect(params.get('domain')).toBe('company');
-    expect(params.get('text')).toBe('Привет, мир');
+  it('deep link ведёт в конкретный чат', () => {
+    const link = buildTelegramDeepLink('@Cuba691', 'Привет');
+    expect(link).toContain('tg://resolve?');
+    expect(link).toContain('domain=Cuba691');
+    expect(link).toContain('text=');
   });
 
-  it('без текста deep link всё равно рабочий', () => {
-    expect(buildTelegramDeepLink('company')).toBe('tg://resolve?domain=company');
+  it('deep link без ника не строится', () => {
+    expect(buildTelegramDeepLink('', 'Привет')).toBeNull();
   });
 
-  it('возвращает null без ника', () => {
-    expect(buildTelegramDeepLink('')).toBeNull();
-    expect(buildTelegramDeepLink('   ')).toBeNull();
-  });
-
-  it('строит веб-ссылку на чат', () => {
-    expect(buildTelegramChatLink('@company')).toBe('https://t.me/company');
+  it('ссылка на чат', () => {
+    expect(buildTelegramChatLink('@Cuba691')).toBe('https://t.me/Cuba691');
     expect(buildTelegramChatLink('')).toBeNull();
   });
 
-  it('строит share-ссылку с текстом и адресом страницы', () => {
-    const link = buildTelegramShareLink('https://example.com', 'Заявка');
-    const params = new URLSearchParams(link.split('?')[1]);
-    expect(params.get('url')).toBe('https://example.com');
-    expect(params.get('text')).toBe('Заявка');
-  });
-});
-
-describe('pickTelegramLink', () => {
-  it('в APK отдаёт tg://, в браузере — share-ссылку', () => {
-    const native = pickTelegramLink({ username: 'company', text: 'Заявка', isNative: true });
-    const web = pickTelegramLink({ username: 'company', text: 'Заявка', pageUrl: 'https://example.com' });
-
-    expect(native.startsWith('tg://')).toBe(true);
-    expect(web.startsWith('https://t.me/share/url')).toBe(true);
+  it('share-ссылка кодирует текст', () => {
+    const link = buildTelegramShareLink('Запись\nИмя: Иван', 'https://example.com');
+    expect(link).toContain('https://t.me/share/url?');
+    // URLSearchParams кодирует пробел как «+».
+    expect(decodeURIComponent(link.replaceAll('+', ' '))).toContain('Имя: Иван');
   });
 
-  it('без ника не отдаёт ссылку ни на одной платформе', () => {
-    expect(pickTelegramLink({ username: '', isNative: true })).toBeNull();
-    expect(pickTelegramLink({ username: '', isNative: false })).toBeNull();
+  it('pickTelegramLink выбирает deep link для APK', () => {
+    expect(pickTelegramLink({ username: '@Cuba691', text: 'Запись', isNative: true })).toContain(
+      'tg://resolve',
+    );
+  });
+
+  it('pickTelegramLink выбирает share для браузера', () => {
+    expect(
+      pickTelegramLink({ username: '@Cuba691', text: 'Запись', pageUrl: 'https://x.dev', isNative: false }),
+    ).toContain('t.me/share/url');
+  });
+
+  it('pickTelegramLink молчит без ника', () => {
+    expect(pickTelegramLink({ username: '', text: 'Запись' })).toBeNull();
   });
 });

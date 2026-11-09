@@ -1,28 +1,49 @@
 import './style.css';
-import { getCompany, findMachine, telegramUsername } from './core/company.js';
-import { calcShiftPrice, formatHours, formatPrice } from './core/pricing.js';
-import { buildRequestText, pickTelegramLink, buildTelegramChatLink } from './core/telegram.js';
+import { getCompany, telegramUsername } from './core/company.js';
+import { formatDuration, formatPrice, formatServicePrice, priceForLevel } from './core/pricing.js';
+import { buildBookingText, buildTelegramChatLink, pickTelegramLink } from './core/telegram.js';
 
 const company = getCompany();
 const isNative = Boolean(window.Capacitor?.isNativePlatform?.());
 const isDemo = typeof __DEMO__ !== 'undefined' && __DEMO__;
-const currency = '₽';
+const telegram = telegramUsername(company);
 
 const $ = (id) => document.getElementById(id);
+const state = { requestText: '' };
+let noteTimer = 0;
 
 init();
 
 function init() {
-  document.title = `${company.companyName} — заявка`;
+  document.title = `${company.companyName} — ${company.kind ?? 'запись'}`;
   setText('company-name', company.companyName);
   setText('company-tagline', company.tagline ?? '');
+  setText('hero-eyebrow', [company.kind, company.contacts?.workingHours].filter(Boolean).join(' · '));
   setText('hero-title', company.tagline || company.companyName);
   setText('hero-lead', buildHeroLead());
-  setText('hero-hours', company.contacts?.workingHours ?? '');
+  setText('hero-hours', [company.contacts?.address, company.contacts?.entrance].filter(Boolean).join(' · '));
   setText('footer-name', company.companyName);
   setText('footer-address', company.contacts?.address ?? '');
   setText('footer-hours', company.contacts?.workingHours ?? '');
 
+  renderPhone();
+  renderLogo();
+  renderPromo();
+  renderServices();
+  renderFind();
+  renderTelegramLinks();
+  wireForm();
+  if (isDemo) applyDemoMode();
+}
+
+function buildHeroLead() {
+  const count = company.services?.length ?? 0;
+  const levels = company.levels?.length ?? 0;
+  const masters = levels > 0 ? `${levels} ${plural(levels, 'уровень мастера', 'уровня мастеров', 'уровней мастеров')}` : '';
+  return `${count} ${plural(count, 'услуга', 'услуги', 'услуг')}, ${masters}. Точную цену и время подтвердим при записи.`;
+}
+
+function renderPhone() {
   const phone = company.contacts?.phone ?? '';
   ['header-phone', 'footer-phone'].forEach((id) => {
     const el = $(id);
@@ -31,17 +52,11 @@ function init() {
     el.href = `tel:${phone.replace(/[^\d+]/g, '')}`;
   });
 
-  renderLogo();
-  renderMachines();
-  renderZones();
-  renderTelegramLinks();
-  wireForm();
-  if (isDemo) applyDemoMode();
-}
-
-function buildHeroLead() {
-  const count = company.machines.length;
-  return `${count} ${plural(count, 'единица техники', 'единицы техники', 'единиц техники')} с почасовой оплатой. Цена предварительная — уточним под задачу.`;
+  const map = $('footer-map');
+  if (map) {
+    if (company.contacts?.mapUrl) map.href = company.contacts.mapUrl;
+    else map.hidden = true;
+  }
 }
 
 function renderLogo() {
@@ -55,224 +70,258 @@ function renderLogo() {
   }
 }
 
-function renderMachines() {
-  const container = $('machines');
+function renderPromo() {
+  const promo = company.promo;
+  const box = $('promo');
+  if (!box || !promo?.title) return;
+  setText('promo-title', promo.title);
+  setText('promo-text', promo.text ?? '');
+  box.hidden = false;
+}
+
+function renderServices() {
+  const container = $('services');
   if (!container) return;
 
-  container.innerHTML = company.machines
-    .map((machine) => {
-      const price = machine.ratePerHour > 0 ? `от ${formatPrice(machine.ratePerHour, currency)}/ч` : 'цена по запросу';
-      const minShift = machine.minShiftHours ? `Минимальная смена — ${formatHours(machine.minShiftHours)}` : '';
-      const status = machine.status === 'available' ? 'Свободна' : 'Занята';
-      const statusClass = machine.status === 'available' ? 'badge badge--ok' : 'badge';
+  container.innerHTML = (company.services ?? [])
+    .map((service) => {
+      const price = formatServicePrice(service);
+      const duration = service.duration ? formatDuration(service.duration) : '';
+      const meta = [duration, service.note].filter(Boolean).join(' · ');
 
       return `
         <article class="card">
-          <div class="card__media">
-            ${machine.photo ? `<img src="${escapeAttr(machine.photo)}" alt="${escapeAttr(machine.name)}" loading="lazy" />` : ''}
-            <span class="${statusClass}">${status}</span>
-          </div>
           <div class="card__body">
-            <h3 class="card__title">${escapeHtml(machine.name)}</h3>
-            <p class="card__purpose">${escapeHtml(machine.purpose ?? '')}</p>
-            <p class="card__price">${price}</p>
-            <p class="card__meta">${escapeHtml([minShift, machine.delivery].filter(Boolean).join(' · '))}</p>
-            <button class="button button--small" type="button" data-machine="${escapeAttr(machine.id)}">
-              Выбрать
+            <h3 class="card__title">${escapeHtml(service.name)}</h3>
+            <p class="card__price">${escapeHtml(price)}</p>
+            <p class="card__meta">${escapeHtml(meta)}</p>
+            <button class="button button--small" type="button" data-service="${escapeAttr(service.id)}">
+              Записаться
             </button>
           </div>
         </article>`;
     })
     .join('');
 
-  container.querySelectorAll('[data-machine]').forEach((button) => {
+  container.querySelectorAll('[data-service]').forEach((button) => {
     button.addEventListener('click', () => {
-      const select = $('field-machine');
-      if (select) select.value = button.dataset.machine;
+      const select = $('field-service');
+      if (select) select.value = button.dataset.service;
       updatePricePreview();
       $('request')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('field-name')?.focus({ preventScroll: true });
     });
   });
-
-  const select = $('field-machine');
-  if (select) {
-    select.innerHTML = company.machines
-      .map((machine) => `<option value="${escapeAttr(machine.id)}">${escapeHtml(machine.name)}</option>`)
-      .join('');
-  }
 }
 
-function renderZones() {
-  const zones = company.deliveryZones ?? [];
-  const section = $('zones-section');
-  const list = $('zones');
-  if (!section || !list || zones.length === 0) return;
+function renderFind() {
+  const list = $('find');
+  if (!list) return;
 
-  section.hidden = false;
-  list.innerHTML = zones
-    .map((zone) => {
-      const price = zone.price > 0 ? formatPrice(zone.price, currency) : 'бесплатно';
-      const freeFrom = zone.freeFrom > 0 ? `, бесплатно от ${formatPrice(zone.freeFrom, currency)}` : '';
-      return `<li class="zone"><span>${escapeHtml(zone.name)}</span><span class="zone__price">${price}${freeFrom}</span></li>`;
-    })
+  const contacts = company.contacts ?? {};
+  const rows = [
+    ['Адрес', contacts.address],
+    ['Вход', contacts.entrance],
+    ['Часы работы', contacts.workingHours],
+    ['Телефон', contacts.phone],
+  ].filter(([, value]) => value);
+
+  list.innerHTML = rows
+    .map(
+      ([label, value]) => `
+      <li class="zone">
+        <span class="zone__name">${escapeHtml(label)}</span>
+        <span class="zone__value">${escapeHtml(value)}</span>
+      </li>`,
+    )
     .join('');
 }
 
 function renderTelegramLinks() {
-  const username = telegramUsername(company.contacts ?? {});
   const link = $('hero-telegram');
   if (!link) return;
 
-  if (!username) {
+  const chat = buildTelegramChatLink(telegram);
+  if (!chat || isDemo) {
     link.hidden = true;
     return;
   }
-  link.href = buildTelegramChatLink(username);
+
+  link.href = chat;
   link.target = '_blank';
-  link.rel = 'noopener noreferrer';
+  link.rel = 'noopener';
+  link.hidden = false;
 }
 
 function wireForm() {
-  const form = $('request-form');
-  const hoursInput = $('field-hours');
-  if (!form || !hoursInput) return;
-
-  hoursInput.addEventListener('input', updatePricePreview);
-  $('field-machine')?.addEventListener('change', updatePricePreview);
+  fillSelects();
   updatePricePreview();
 
-  $('copy-request')?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(buildRequestTextFromForm());
-      flashNote('Заявка скопирована — вставьте её в чат Telegram.');
-    } catch {
-      flashNote('Не удалось скопировать. Выделите текст заявки вручную.');
-    }
+  ['field-service', 'field-level'].forEach((id) => {
+    $(id)?.addEventListener('change', updatePricePreview);
   });
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    if (isDemo) {
-      flashNote('Это демо-версия: заявки не отправляются.');
-      return;
-    }
-    const error = validateForm();
-    const errorBox = $('form-error');
-    if (errorBox) {
-      errorBox.textContent = error ?? '';
-      errorBox.hidden = !error;
-    }
-    if (error) return;
-
-    const username = telegramUsername(company.contacts ?? {});
-    const text = buildRequestTextFromForm();
-    const link = pickTelegramLink({
-      username,
-      text,
-      pageUrl: window.location.href,
-      isNative,
-    });
-
-    if (!link) {
-      flashNote('Контакт Telegram не настроен — скопируйте заявку и отправьте её вручную.');
-      revealCopyButton();
-      return;
-    }
-
-    window.location.href = link;
-    // если через секунду страница всё ещё видна — Telegram не открылся
-    setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        flashNote('Telegram не открылся. Скопируйте заявку и отправьте её вручную.');
-        revealCopyButton();
-      }
-    }, 1500);
-  });
+  $('request-form')?.addEventListener('submit', onSubmit);
+  $('copy-request')?.addEventListener('click', copyRequest);
 }
 
-function revealCopyButton() {
+function fillSelects() {
+  const serviceSelect = $('field-service');
+  const levelSelect = $('field-level');
+
+  if (serviceSelect) {
+    serviceSelect.innerHTML = [
+      '<option value="">Выберите услугу</option>',
+      ...(company.services ?? []).map(
+        (service) =>
+          `<option value="${escapeAttr(service.id)}">${escapeHtml(service.name)} — ${escapeHtml(formatServicePrice(service))}</option>`,
+      ),
+    ].join('');
+  }
+
+  if (levelSelect) {
+    levelSelect.innerHTML = (company.levels ?? [])
+      .map(
+        (level, index) =>
+          `<option value="${escapeAttr(level.id)}"${index === 0 ? ' selected' : ''}>${escapeHtml(level.name)}</option>`,
+      )
+      .join('');
+  }
+}
+
+function updatePricePreview() {
+  const preview = $('price-preview');
+  if (!preview) return;
+
+  const service = currentService();
+  if (!service) {
+    preview.textContent = 'Выберите услугу — покажу цену и длительность.';
+    return;
+  }
+
+  const level = currentLevel();
+  const price = priceForLevel(service, level?.id);
+  const parts = [level?.name, price === null ? 'цена по запросу' : formatPrice(price)];
+
+  if (service.duration) parts.push(formatDuration(service.duration));
+  if (service.note) parts.push(service.note);
+
+  preview.textContent = `${service.name}: ${parts.filter(Boolean).join(' · ')}`;
+}
+
+function onSubmit(event) {
+  event.preventDefault();
+  clearError();
+
+  const name = $('field-name')?.value.trim() ?? '';
+  const phone = $('field-phone')?.value.trim() ?? '';
+  const service = currentService();
+  const level = currentLevel();
+  const when = formatWhen($('field-when')?.value ?? '');
+  const comment = $('field-comment')?.value.trim() ?? '';
+
+  if (name.length < 2) return showError('Как к вам обращаться? Имя — хотя бы 2 буквы.');
+  if (phone.replace(/\D/g, '').length < 10) return showError('Телефон должен содержать не меньше 10 цифр.');
+  if (!service) return showError('Выберите услугу — от неё зависит цена и длительность.');
+
+  const price = priceForLevel(service, level?.id);
+  const text = buildBookingText({
+    companyName: company.companyName,
+    name,
+    phone,
+    serviceName: service.name,
+    levelName: level?.name ?? '',
+    when,
+    priceText: price === null ? '' : `${formatPrice(price)}${service.note ? ` (${service.note})` : ''}`,
+    comment,
+  });
+
+  state.requestText = text;
+  showCopyButton(text);
+
+  if (isDemo) {
+    flashNote('Демо: заявка не отправляется, но текст можно скопировать.');
+    return;
+  }
+
+  const link = pickTelegramLink({
+    username: telegram,
+    text,
+    pageUrl: globalThis.location?.href ?? '',
+    isNative,
+  });
+
+  if (!link) {
+    flashNote('Telegram не настроен — скопируйте заявку и отправьте вручную.');
+    return;
+  }
+
+  if (isNative) {
+    globalThis.location.href = link;
+  } else {
+    window.open(link, '_blank', 'noopener');
+  }
+  flashNote('Открыл Telegram — отправьте заявку в чате.');
+}
+
+async function copyRequest() {
+  if (!state.requestText) return;
+  try {
+    await navigator.clipboard.writeText(state.requestText);
+    flashNote('Заявка скопирована в буфер обмена.');
+  } catch {
+    flashNote('Не удалось скопировать — выделите текст вручную.');
+  }
+}
+
+function currentService() {
+  const id = $('field-service')?.value;
+  if (!id) return null;
+  return (company.services ?? []).find((service) => service.id === id) ?? null;
+}
+
+function currentLevel() {
+  const id = $('field-level')?.value;
+  if (!id) return null;
+  return (company.levels ?? []).find((level) => level.id === id) ?? null;
+}
+
+function showCopyButton(text) {
   const button = $('copy-request');
-  if (button) button.hidden = false;
+  if (!button || !text || isDemo) return;
+  button.hidden = false;
 }
 
-/**
- * Демо-режим: та же страница с данными клиента, но заявки не уходят,
- * а сверху висит плашка — чтобы демо не приняли за рабочую версию.
- */
 function applyDemoMode() {
-  document.body.classList.add('is-demo');
-
   const banner = document.createElement('div');
   banner.className = 'demo-banner';
-  banner.setAttribute('role', 'status');
-  banner.textContent = 'Демо-версия: данные примерные, заявки не отправляются';
+  banner.textContent = 'Демо-версия: заявки не отправляются, кнопки записи отключены.';
   document.body.prepend(banner);
-
-  const telegram = $('hero-telegram');
-  if (telegram) telegram.hidden = true;
 
   const submit = document.querySelector('#request-form button[type="submit"]');
   if (submit) {
     submit.disabled = true;
     submit.textContent = 'Отправка в демо недоступна';
-    submit.title = 'Демо-версия: форма не отправляет заявки';
   }
 
-  const note = $('form-note');
-  if (note) note.textContent = 'Это демо-версия: заполните форму, чтобы оценить сценарий, но заявка не уйдёт.';
+  const copy = $('copy-request');
+  if (copy) copy.hidden = false;
 }
 
-function updatePricePreview() {
-  const preview = $('price-preview');
-  const select = $('field-machine');
-  if (!preview || !select) return;
-
-  const machine = findMachine(select.value, company);
-  const hours = Number($('field-hours')?.value ?? 0);
-  if (!machine) {
-    preview.textContent = '';
-    return;
-  }
-
-  if (!Number.isFinite(hours) || hours <= 0) {
-    preview.textContent = `Минимальная смена — ${formatHours(machine.minShiftHours)}.`;
-    return;
-  }
-
-  const billedHours = Math.max(hours, machine.minShiftHours);
-  const price = calcShiftPrice({
-    ratePerHour: machine.ratePerHour,
-    hours,
-    minShiftHours: machine.minShiftHours,
-  });
-
-  preview.textContent =
-    machine.ratePerHour > 0
-      ? `Предварительно: ${formatPrice(price, currency)} за ${formatHours(billedHours)}`
-      : 'Цена по запросу: посчитаем после уточнения задачи.';
+function showError(message) {
+  const box = $('form-error');
+  if (!box) return;
+  box.textContent = message;
+  box.hidden = false;
 }
 
-function buildRequestTextFromForm() {
-  const select = $('field-machine');
-  const machine = findMachine(select?.value ?? '', company);
-  return buildRequestText({
-    name: $('field-name')?.value ?? '',
-    phone: $('field-phone')?.value ?? '',
-    machineName: machine?.name ?? '',
-    hours: Number($('field-hours')?.value ?? 0),
-    comment: $('field-comment')?.value ?? '',
-  });
+function clearError() {
+  const box = $('form-error');
+  if (!box) return;
+  box.textContent = '';
+  box.hidden = true;
 }
 
-function validateForm() {
-  const name = $('field-name')?.value.trim() ?? '';
-  const phone = $('field-phone')?.value.trim() ?? '';
-  if (name.length < 2) return 'Укажите имя — хотя бы две буквы.';
-  if (phone.replace(/\D/g, '').length < 10) return 'Укажите телефон в формате +7 ___ ___-__-__.';
-  return null;
-}
-
-let noteTimer;
 function flashNote(message) {
   const note = $('form-note');
   if (!note) return;
@@ -281,6 +330,19 @@ function flashNote(message) {
   noteTimer = setTimeout(() => {
     note.textContent = '';
   }, 6000);
+}
+
+function formatWhen(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function setText(id, value) {

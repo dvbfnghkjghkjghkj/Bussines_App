@@ -4,7 +4,7 @@
  * из config/company.json. Один источник правды: имя приложения, package id,
  * версия — всё берётся из конфига, а не правится руками в android/.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -88,6 +88,57 @@ if (existsSync(stringsPath)) {
   if (after !== before) {
     writeFileSync(stringsPath, after, 'utf8');
     console.log(`strings.xml: app_name="${appName}"`);
+  }
+}
+
+// Java-класс MainActivity: package обязан совпадать с namespace из build.gradle,
+// иначе манифест не найдёт точку входа и приложение упадёт при запуске.
+const javaRoot = path.join(root, 'android', 'app', 'src', 'main', 'java');
+if (existsSync(javaRoot)) {
+  syncJavaPackage(javaRoot, appId);
+}
+
+function syncJavaPackage(javaRootDir, packageId) {
+  const targetDir = path.join(javaRootDir, ...packageId.split('.'));
+  const targetFile = path.join(targetDir, 'MainActivity.java');
+  const expectedPackage = `package ${packageId};`;
+
+  for (const file of findAll(javaRootDir, 'MainActivity.java')) {
+    const content = readFileSync(file, 'utf8');
+    const updated = content.replace(/^package\s+[^;]+;/m, expectedPackage);
+
+    if (path.resolve(file) === path.resolve(targetFile)) {
+      if (updated !== content) {
+        writeFileSync(file, updated, 'utf8');
+        console.log(`MainActivity.java: package → ${packageId}`);
+      }
+      continue;
+    }
+
+    mkdirSync(targetDir, { recursive: true });
+    writeFileSync(targetFile, updated, 'utf8');
+    rmSync(file);
+    pruneEmptyDirs(path.dirname(file), javaRootDir);
+    console.log(`MainActivity.java: переехал в ${path.relative(root, targetDir)}`);
+  }
+}
+
+function findAll(dir, fileName) {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...findAll(fullPath, fileName));
+    else if (entry.name === fileName) found.push(fullPath);
+  }
+  return found;
+}
+
+function pruneEmptyDirs(dir, stopDir) {
+  let current = dir;
+  while (current.startsWith(stopDir) && current !== stopDir) {
+    if (readdirSync(current).length > 0) break;
+    rmSync(current, { recursive: true });
+    current = path.dirname(current);
   }
 }
 

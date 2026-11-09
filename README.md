@@ -40,7 +40,7 @@ docs/            PROJECT, CONVENTIONS, STATE, DECISIONS, MOBILE, DESKTOP, DEMO
 electron/        оболочка ПК-версии (main.cjs)
 installer/       шаблон установщика Inno Setup
 knowledge/       база знаний (не менять без подтверждения)
-public/          логотип, фото техники
+public/          логотип, изображения
 resources/       icon.png, splash.png для Android (генерируются)
 scripts/         генерация иконок и Android-конфига, сборка APK и установщика
 src/             core/ (конфиг, цены, Telegram) + main.js + style.css

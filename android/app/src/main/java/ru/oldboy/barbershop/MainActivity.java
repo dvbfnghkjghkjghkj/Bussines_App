@@ -1,4 +1,4 @@
-package ru.example.businessapp;
+package ru.oldboy.barbershop;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -16,7 +16,7 @@ const app = company.app ?? {};
 const appId = String(app.appId ?? '').trim();
 const appName = String(app.appName ?? company.companyName ?? '').trim();
 const versionName = String(app.versionName ?? '0.1.0').trim();
-const exeName = `${appId.split('.').pop() || 'app'}.exe`;
+const exeName = `${resolveExeName(app, appId)}.exe`;
 
 const payloadDir = path.join(root, 'release', 'win-unpacked');
 if (!existsSync(path.join(payloadDir, exeName))) {
@@ -68,6 +68,16 @@ if (result.status !== 0) {
 
 const setupName = `${appId}-setup-${versionName}.exe`;
 console.log(`Готово: installer\\output\\${setupName}`);
+
+/**
+ * Имя exe берётся из app.exeName (латиница), иначе — последний сегмент appId.
+ * Та же логика в electron-builder.config.cjs: расхождение сломает поиск файла.
+ */
+function resolveExeName(appConfig, appIdentifier) {
+  const custom = String(appConfig?.exeName ?? '').trim();
+  if (/^[A-Za-z0-9._-]+$/.test(custom)) return custom;
+  return appIdentifier.split('.').pop() || 'app';
+}
 
 function toVersionInfo(version) {
   const parts = String(version).split(/[.-]/).filter((part) => /^\d+$/.test(part));

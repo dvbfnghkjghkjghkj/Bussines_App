@@ -1,73 +1,117 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_MIN_SHIFT_HOURS,
-  calcShiftPrice,
-  formatHours,
+  formatDuration,
   formatPrice,
   formatPriceRange,
+  formatServicePrice,
+  priceForLevel,
+  priceRange,
+  servicePrices,
 } from '../../src/core/pricing.js';
 
-describe('calcShiftPrice', () => {
-  it('считает цену по фактическим часам, если они больше минимума', () => {
-    expect(calcShiftPrice({ ratePerHour: 1800, hours: 6, minShiftHours: 4 })).toBe(10800);
-  });
-
-  it('поднимает часы до минимальной смены', () => {
-    expect(calcShiftPrice({ ratePerHour: 1800, hours: 3, minShiftHours: 4 })).toBe(7200);
-  });
-
-  it('на границе минимальной смены цена не меняется', () => {
-    expect(calcShiftPrice({ ratePerHour: 1800, hours: 4, minShiftHours: 4 })).toBe(7200);
-  });
-
-  it('ноль часов даёт ноль рублей, а не минимальную смену', () => {
-    expect(calcShiftPrice({ ratePerHour: 1800, hours: 0, minShiftHours: 4 })).toBe(0);
-  });
-
-  it('использует минимальную смену по умолчанию', () => {
-    expect(DEFAULT_MIN_SHIFT_HOURS).toBe(4);
-    expect(calcShiftPrice({ ratePerHour: 1000, hours: 1 })).toBe(4000);
-  });
-
-  it('округляет дробные часы до целых рублей', () => {
-    expect(calcShiftPrice({ ratePerHour: 999, hours: 2.5, minShiftHours: 1 })).toBe(2498);
-  });
-
-  it('отвергает отрицательную ставку', () => {
-    expect(() => calcShiftPrice({ ratePerHour: -1, hours: 4 })).toThrow(RangeError);
-  });
-
-  it('отвергает нулевую минимальную смену', () => {
-    expect(() => calcShiftPrice({ ratePerHour: 1000, hours: 4, minShiftHours: 0 })).toThrow(RangeError);
-  });
-});
+const NBSP = '\u00A0';
+const price = (value) => `${value}${NBSP}₽`;
 
 describe('formatPrice', () => {
-  it('разделяет тысячи пробелом и добавляет валюту', () => {
-    expect(formatPrice(1800)).toBe('1\u00A0800\u00A0₽');
+  it('разделяет тысячи и добавляет валюту', () => {
+    expect(formatPrice(1500)).toBe(`1${NBSP}500${NBSP}₽`);
+    expect(formatPrice(2200)).toBe(price(`2${NBSP}200`));
+    expect(formatPrice(0)).toBe(price('0'));
   });
 
-  it('не добавляет разделитель для сотен', () => {
-    expect(formatPrice(950)).toBe('950\u00A0₽');
+  it('принимает строки с числом', () => {
+    expect(formatPrice('700')).toBe(price('700'));
+  });
+
+  it('округляет дробные значения', () => {
+    expect(formatPrice(1500.6)).toBe(`1${NBSP}501${NBSP}₽`);
+  });
+
+  it('возвращает пустую строку вместо мусора', () => {
+    expect(formatPrice(Number.NaN)).toBe('');
+    expect(formatPrice(-1)).toBe('');
+    expect(formatPrice(null)).toBe('');
+    expect(formatPrice('много')).toBe('');
   });
 });
 
 describe('formatPriceRange', () => {
-  it('показывает диапазон через тире', () => {
-    expect(formatPriceRange(5000, 8000)).toBe('5\u00A0000\u00A0₽ – 8\u00A0000\u00A0₽');
+  it('показывает диапазон «от – до»', () => {
+    expect(formatPriceRange(1500, 2200)).toBe(
+      `1${NBSP}500${NBSP}₽${NBSP}–${NBSP}2${NBSP}200${NBSP}₽`,
+    );
   });
 
-  it('схлопывает равные границы в одно число', () => {
-    expect(formatPriceRange(100, 100)).toBe('100\u00A0₽');
+  it('границы можно передать в обратном порядке', () => {
+    expect(formatPriceRange(2200, 1500)).toBe(formatPriceRange(1500, 2200));
   });
 
-  it('падает, если границы перепутаны', () => {
-    expect(() => formatPriceRange(200, 100)).toThrow(RangeError);
+  it('одинаковые границы схлопываются в одну цену', () => {
+    expect(formatPriceRange(1500, 1500)).toBe(price(`1${NBSP}500`));
+  });
+
+  it('одна граница без второй работает', () => {
+    expect(formatPriceRange(null, 900)).toBe(price('900'));
+    expect(formatPriceRange(900, null)).toBe(price('900'));
+    expect(formatPriceRange(null, null)).toBe('');
   });
 });
 
-describe('formatHours', () => {
-  it('добавляет единицу измерения', () => {
-    expect(formatHours(4)).toBe('4\u00A0ч');
+describe('formatDuration', () => {
+  it('минуты без часов', () => {
+    expect(formatDuration(45)).toBe(`45${NBSP}мин`);
+  });
+
+  it('целые часы', () => {
+    expect(formatDuration(60)).toBe(`1${NBSP}ч`);
+    expect(formatDuration(120)).toBe(`2${NBSP}ч`);
+  });
+
+  it('часы и минуты', () => {
+    expect(formatDuration(90)).toBe(`1${NBSP}ч 30${NBSP}мин`);
+  });
+
+  it('ноль и мусор дают пустую строку', () => {
+    expect(formatDuration(0)).toBe('');
+    expect(formatDuration(null)).toBe('');
+    expect(formatDuration('abc')).toBe('');
+  });
+});
+
+describe('цены услуги', () => {
+  const withLevels = { prices: { barber: 1500, top: 1800, premium: 2200 } };
+  const single = { price: 1200 };
+  const empty = {};
+
+  it('servicePrices собирает цены уровней', () => {
+    expect(servicePrices(withLevels)).toEqual([1500, 1800, 2200]);
+  });
+
+  it('servicePrices берёт единую цену', () => {
+    expect(servicePrices(single)).toEqual([1200]);
+    expect(servicePrices(empty)).toEqual([]);
+  });
+
+  it('priceRange считает минимум и максимум', () => {
+    expect(priceRange(withLevels)).toEqual({ min: 1500, max: 2200 });
+    expect(priceRange(single)).toEqual({ min: 1200, max: 1200 });
+    expect(priceRange(empty)).toBeNull();
+  });
+
+  it('priceForLevel берёт цену уровня', () => {
+    expect(priceForLevel(withLevels, 'top')).toBe(1800);
+  });
+
+  it('priceForLevel откатывается на общую цену', () => {
+    expect(priceForLevel(single, 'top')).toBe(1200);
+    expect(priceForLevel(empty, 'top')).toBeNull();
+  });
+
+  it('formatServicePrice собирает подпись для карточки', () => {
+    expect(formatServicePrice(withLevels)).toBe(
+      `1${NBSP}500${NBSP}₽${NBSP}–${NBSP}2${NBSP}200${NBSP}₽`,
+    );
+    expect(formatServicePrice(single)).toBe(price(`1${NBSP}200`));
+    expect(formatServicePrice(empty)).toBe('цена по запросу');
   });
 });

@@ -1,6 +1,6 @@
 {
-  "appId": "ru.example.businessapp",
-  "appName": "Бизнес-приложение",
+  "appId": "ru.oldboy.barbershop",
+  "appName": "OldBoy",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

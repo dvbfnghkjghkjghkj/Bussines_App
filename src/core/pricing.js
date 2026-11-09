@@ -1,56 +1,92 @@
-export const DEFAULT_MIN_SHIFT_HOURS = 4;
+/**
+ * Цены и длительность услуг.
+ *
+ * Чистые функции без DOM: используются на странице, в тестах и при сборке
+ * текста заявки. Цена зависит от уровня мастера (Барбер / ТОП / ПРЕМИУМ),
+ * услуги без уровня имеют одну цену в поле `price`.
+ */
+
 export const CURRENCY = '₽';
 
 /**
- * Стоимость смены: часы округляются вверх до минимальной смены.
- * Граничные случаи: hours ≤ 0 → 0, любое hours < minShiftHours → minShiftHours.
+ * «1 800 ₽» с неразрывным пробелом — цена не рвётся по строкам.
+ * Некорректное значение превращается в пустую строку, а не в «NaN ₽».
  */
-export function calcShiftPrice({ ratePerHour, hours, minShiftHours = DEFAULT_MIN_SHIFT_HOURS }) {
-  assertNonNegative(ratePerHour, 'ratePerHour');
-  assertNonNegative(hours, 'hours');
-  assertPositive(minShiftHours, 'minShiftHours');
-
-  if (hours <= 0) return 0;
-
-  const billableHours = Math.max(hours, minShiftHours);
-  return Math.round(billableHours * ratePerHour);
-}
-
-/** «1 800 ₽» с неразрывными пробелами — так цена не рвётся по строкам. */
 export function formatPrice(value, currency = CURRENCY) {
-  assertNonNegative(value, 'value');
-  const rounded = Math.round(value);
-  return `${new Intl.NumberFormat('ru-RU').format(rounded)}\u00A0${currency}`;
+  const number = toNonNegative(value);
+  if (number === null) return '';
+  return `${new Intl.NumberFormat('ru-RU').format(Math.round(number))}\u00A0${currency}`;
 }
 
 /**
  * Предварительная цена диапазоном — требование проекта: никаких точных
- * обещаний. Если границы равны, отдаём одно число.
+ * обещаний. Границы можно передать в любом порядке, минимум берётся сам.
+ * (1500, 2200) → «1 500 – 2 200 ₽»; (1500, 1500) → «1 500 ₽».
  */
-export function formatPriceRange(min, max, currency = CURRENCY) {
-  assertNonNegative(min, 'min');
-  assertNonNegative(max, 'max');
-  if (min > max) {
-    throw new RangeError('formatPriceRange: min не может быть больше max');
-  }
+export function formatPriceRange(from, to, currency = CURRENCY) {
+  const a = toNonNegative(from);
+  const b = toNonNegative(to);
+  if (a === null && b === null) return '';
+  if (a === null) return formatPrice(b, currency);
+  if (b === null) return formatPrice(a, currency);
+
+  const min = Math.min(a, b);
+  const max = Math.max(a, b);
   if (min === max) return formatPrice(min, currency);
-  return `${formatPrice(min, currency)} – ${formatPrice(max, currency)}`;
+  return `${formatPrice(min, currency)}\u00A0–\u00A0${formatPrice(max, currency)}`;
 }
 
-/** Часы работы смены в человеческом виде: 4 → «4 ч». */
-export function formatHours(hours) {
-  assertNonNegative(hours, 'hours');
-  return `${new Intl.NumberFormat('ru-RU').format(hours)}\u00A0ч`;
+/** Длительность услуги: 60 → «1 ч», 45 → «45 мин», 90 → «1 ч 30 мин». */
+export function formatDuration(minutes) {
+  const value = toNonNegative(minutes);
+  if (value === null || value === 0) return '';
+
+  const total = Math.round(value);
+  if (total < 60) return `${total}\u00A0мин`;
+
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest === 0 ? `${hours}\u00A0ч` : `${hours}\u00A0ч ${rest}\u00A0мин`;
 }
 
-function assertNonNegative(value, name) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new RangeError(`${name}: ожидается конечное число ≥ 0, получено ${value}`);
-  }
+/** Все известные цены услуги: из карты уровней или единая цена. */
+export function servicePrices(service) {
+  const values = Object.values(service?.prices ?? {})
+    .map((value) => toNonNegative(value))
+    .filter((value) => value !== null);
+
+  if (values.length > 0) return values;
+
+  const base = toNonNegative(service?.price);
+  return base === null ? [] : [base];
 }
 
-function assertPositive(value, name) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-    throw new RangeError(`${name}: ожидается конечное число > 0, получено ${value}`);
-  }
+/** Диапазон цен услуги: { min, max } или null, если цены нет. */
+export function priceRange(service) {
+  const values = servicePrices(service);
+  if (values.length === 0) return null;
+  return { min: Math.min(...values), max: Math.max(...values) };
+}
+
+/**
+ * Цена услуги для конкретного уровня мастера.
+ * Если для уровня цены нет — берётся общая цена услуги, иначе null.
+ */
+export function priceForLevel(service, levelId) {
+  const byLevel = toNonNegative(service?.prices?.[levelId]);
+  if (byLevel !== null) return byLevel;
+  return toNonNegative(service?.price);
+}
+
+/** Готовая подпись цены для карточки: «1 500 – 2 200 ₽» или «1 200 ₽». */
+export function formatServicePrice(service, currency = CURRENCY) {
+  const range = priceRange(service);
+  if (!range) return 'цена по запросу';
+  return formatPriceRange(range.min, range.max, currency);
+}
+
+function toNonNegative(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }

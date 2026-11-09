@@ -1,68 +1,60 @@
-import { describe, it } from 'vitest';
 import fc from 'fast-check';
-import { calcShiftPrice } from '../../src/core/pricing.js';
+import { describe, expect, it } from 'vitest';
+import { formatPriceRange, formatServicePrice, priceForLevel, priceRange } from '../../src/core/pricing.js';
 
-describe('calcShiftPrice — свойства', () => {
-  it('цена всегда кратна ставке (при целых часах)', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 500_000 }),
-        fc.integer({ min: 0, max: 72 }),
-        fc.integer({ min: 1, max: 24 }),
-        (ratePerHour, hours, minShiftHours) => {
-          const price = calcShiftPrice({ ratePerHour, hours, minShiftHours });
-          if (ratePerHour === 0) return price === 0;
-          if (hours === 0) return price === 0;
-          return price % ratePerHour === 0 && price >= 0;
-        },
-      ),
-      { numRuns: 300 },
-    );
-  });
+const priceValue = fc.integer({ min: 0, max: 20000 });
+const levelId = fc.constantFrom('barber', 'top', 'premium');
 
-  it('цена не убывает с ростом часов', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 100_000 }),
-        fc.integer({ min: 0, max: 60 }),
-        fc.integer({ min: 0, max: 24 }),
-        fc.integer({ min: 1, max: 24 }),
-        (ratePerHour, hours, extra, minShiftHours) => {
-          const a = calcShiftPrice({ ratePerHour, hours, minShiftHours });
-          const b = calcShiftPrice({ ratePerHour, hours: hours + extra, minShiftHours });
-          return b >= a;
-        },
-      ),
-      { numRuns: 300 },
-    );
-  });
+const serviceWithLevels = fc
+  .record({
+    barber: priceValue,
+    top: priceValue,
+    premium: priceValue,
+  })
+  .map((prices) => ({ id: 's', name: 'Услуга', prices }));
 
-  it('оплата равна хотя бы минимальной смене, если часы больше нуля', () => {
+describe('свойства диапазона цен', () => {
+  it('минимум никогда не больше максимума', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 100_000 }),
-        fc.integer({ min: 1, max: 72 }),
-        fc.integer({ min: 1, max: 24 }),
-        (ratePerHour, hours, minShiftHours) => {
-          const price = calcShiftPrice({ ratePerHour, hours, minShiftHours });
-          return price >= ratePerHour * minShiftHours;
-        },
-      ),
-      { numRuns: 300 },
-    );
-  });
-
-  it('не принимает отрицательные значения', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: -1_000_000, max: -1 }), fc.integer({ min: 1, max: 24 }), (rate, minShiftHours) => {
-        try {
-          calcShiftPrice({ ratePerHour: rate, hours: 4, minShiftHours });
-          return false;
-        } catch (error) {
-          return error instanceof RangeError;
-        }
+      fc.property(serviceWithLevels, (service) => {
+        const range = priceRange(service);
+        expect(range.min).toBeLessThanOrEqual(range.max);
       }),
-      { numRuns: 100 },
+    );
+  });
+
+  it('цена любого уровня попадает в диапазон', () => {
+    fc.assert(
+      fc.property(serviceWithLevels, levelId, (service, level) => {
+        const range = priceRange(service);
+        const price = priceForLevel(service, level);
+        expect(price).toBeGreaterThanOrEqual(range.min);
+        expect(price).toBeLessThanOrEqual(range.max);
+      }),
+    );
+  });
+
+  it('диапазон содержит обе границы', () => {
+    fc.assert(
+      fc.property(priceValue, priceValue, (a, b) => {
+        const text = formatPriceRange(a, b);
+        const min = Math.min(a, b);
+        const max = Math.max(a, b);
+        const digits = (value) => value.toLocaleString('ru-RU');
+
+        expect(text).toContain(digits(min));
+        if (min !== max) expect(text).toContain(digits(max));
+      }),
+    );
+  });
+
+  it('подпись цены валидной услуги не пустая и без NaN', () => {
+    fc.assert(
+      fc.property(serviceWithLevels, (service) => {
+        const text = formatServicePrice(service);
+        expect(text.length).toBeGreaterThan(0);
+        expect(text).not.toContain('NaN');
+      }),
     );
   });
 });

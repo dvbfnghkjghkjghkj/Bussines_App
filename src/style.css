@@ -311,9 +311,8 @@ main {
 }
 
 .zone {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  gap: 2px;
   padding: 12px 16px;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -321,9 +320,17 @@ main {
   font-size: 15px;
 }
 
-.zone__price {
+.zone__name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
-  white-space: nowrap;
+}
+
+.zone__value {
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .section--form {
@@ -489,4 +496,35 @@ main {
 
 .button:disabled:hover {
   transform: none;
+}
+
+/* ---- часы в шапке и промо-плашка ---- */
+
+.hero__hours {
+  margin: -14px 0 24px;
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.promo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 28px;
+  padding: 14px 18px;
+  max-width: 58ch;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+
+.promo__title {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.promo__text {
+  font-size: 14px;
+  color: var(--muted);
 }

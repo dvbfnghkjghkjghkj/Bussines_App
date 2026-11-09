@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Бизнес-приложение</string>
-    <string name="title_activity_main">Бизнес-приложение</string>
-    <string name="package_name">ru.example.businessapp</string>
-    <string name="custom_url_scheme">ru.example.businessapp</string>
+    <string name="app_name">OldBoy</string>
+    <string name="title_activity_main">OldBoy</string>
+    <string name="package_name">ru.oldboy.barbershop</string>
+    <string name="custom_url_scheme">ru.oldboy.barbershop</string>
 </resources>
