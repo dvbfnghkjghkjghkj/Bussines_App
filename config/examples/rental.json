@@ -1,80 +1,76 @@
 {
-  "template": "rental",
-  "companyName": "Спецтехника Пример",
-  "kind": "Аренда спецтехники · Город",
-  "tagline": "Экскаваторы, погрузчики и самосвалы с оператором",
-  "logo": "logo.svg",
-  "contacts": {
-    "phone": "+7 900 000-00-00",
-    "whatsapp": "",
-    "telegram": "@example_rental",
-    "email": "",
-    "address": "Город, улица, дом",
-    "entrance": "База: въезд с торца склада",
-    "workingHours": "Ежедневно 08:00–20:00",
-    "mapUrl": ""
-  },
-  "telegramChatId": "",
-  "app": {
-    "appId": "ru.example.rental",
-    "appName": "Спецтехника",
-    "exeName": "Rental",
-    "versionCode": 1,
-    "versionName": "0.1.0"
-  },
-  "machines": [
-    {
-      "id": "mini-excavator",
-      "name": "Мини-экскаватор",
-      "photo": "",
-      "purpose": "Котлованы, траншеи, небольшие площадки",
-      "ratePerHour": 2000,
-      "minShiftHours": 4,
-      "delivery": "Доставка по городу — от 3000 ₽",
-      "status": "available"
-    },
-    {
-      "id": "wheel-loader",
-      "name": "Фронтальный погрузчик",
-      "photo": "",
-      "purpose": "Погрузка грунта и стройматериалов",
-      "ratePerHour": 2600,
-      "minShiftHours": 4,
-      "delivery": "Доставка по городу — от 3500 ₽",
-      "status": "available"
-    },
-    {
-      "id": "dump-truck",
-      "name": "Самосвал 10 м³",
-      "photo": "",
-      "purpose": "Вывоз грунта и мусора, доставка песка",
-      "ratePerHour": 1800,
-      "minShiftHours": 4,
-      "delivery": "Доставка по городу — от 2500 ₽",
-      "status": "busy"
-    }
-  ],
-  "deliveryZones": [
-    {
-      "id": "center",
-      "name": "Центр",
-      "price": 0,
-      "freeFrom": 0,
-      "note": ""
-    },
-    {
-      "id": "suburb",
-      "name": "Пригород до 20 км",
-      "price": 1500,
-      "freeFrom": 15000,
-      "note": ""
-    },
-    {
-      "id": "far",
-      "name": "Дальше 20 км",
-      "price": 3000,
-      "freeFrom": 0,
-      "note": "Считаем по километражу"
-    }
-  ]
+    "template":  "rental",
+    "companyName":  "Спецтехника Пример",
+    "kind":  "Аренда спецтехники · Город",
+    "tagline":  "Экскаваторы, погрузчики и самосвалы с оператором",
+    "heroNote":  "Работаем ежедневно",
+    "texts":  {
+                  "heroLead":  "Три единицы техники с оператором: мини-экскаватор, погрузчик и самосвал.",
+                  "fleetHint":  "Выберите технику под задачу. Цены предварительные.",
+                  "calcHint":  "Заполните параметры объекта — стоимость пересчитается автоматически."
+              },
+    "logo":  "logo.svg",
+    "contacts":  {
+                     "phone":  "+7 900 000-00-00",
+                     "whatsapp":  "",
+                     "telegram":  "@example_rental",
+                     "email":  "",
+                     "address":  "Город, улица, дом",
+                     "entrance":  "База: въезд с торца склада",
+                     "workingHours":  "Ежедневно 08:00–20:00",
+                     "mapUrl":  ""
+                 },
+    "app":  {
+                "appId":  "ru.example.rental",
+                "appName":  "Спецтехника",
+                "exeName":  "Rental",
+                "versionCode":  1,
+                "versionName":  "0.1.0"
+            },
+    "machines":  [
+                     {
+                         "id":  "mini-excavator",
+                         "name":  "Мини-экскаватор",
+                         "photo":  "",
+                         "purpose":  "Котлованы, траншеи, небольшие площадки",
+                         "ratePerHour":  2000,
+                         "minShiftHours":  4,
+                         "status":  "available"
+                     },
+                     {
+                         "id":  "wheel-loader",
+                         "name":  "Фронтальный погрузчик",
+                         "photo":  "",
+                         "purpose":  "Погрузка грунта и стройматериалов",
+                         "ratePerHour":  2600,
+                         "minShiftHours":  4,
+                         "status":  "confirm"
+                     },
+                     {
+                         "id":  "dump-truck",
+                         "name":  "Самосвал 10 м³",
+                         "photo":  "",
+                         "purpose":  "Вывоз грунта и мусора, доставка песка",
+                         "ratePerHour":  1800,
+                         "minShiftHours":  4,
+                         "status":  "busy"
+                     }
+                 ],
+    "deliveryZones":  [
+                          {
+                              "id":  "center",
+                              "name":  "Центр",
+                              "price":  0
+                          },
+                          {
+                              "id":  "suburb",
+                              "name":  "Пригород до 20 км",
+                              "price":  1500
+                          },
+                          {
+                              "id":  "far",
+                              "name":  "Дальше 20 км",
+                              "price":  3000
+                          }
+                      ]
 }

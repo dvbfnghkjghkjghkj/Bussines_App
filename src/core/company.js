@@ -13,7 +13,20 @@ export const APP_ID_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 export const TEMPLATES = ['services', 'rental'];
 
 const TELEGRAM_HOSTS = ['t.me', 'telegram.me', 'telegram.dog'];
-const MACHINE_STATUSES = ['available', 'busy'];
+
+/** Статус техники: свободна, занята или требует подтверждения владельца. */
+export const MACHINE_STATUSES = ['available', 'busy', 'confirm'];
+
+export const MACHINE_STATUS_LABELS = {
+  available: 'Свободна',
+  busy: 'Занята',
+  confirm: 'Требует подтверждения',
+};
+
+/** Можно ли выбрать технику в заявке: занятую — нельзя. */
+export function canSelectStatus(status) {
+  return status !== 'busy';
+}
 
 /** Тип шаблона из конфига; неизвестное значение считается «услуги». */
 export function templateOf(config = rawConfig) {
@@ -139,7 +152,7 @@ function validateRental(config, errors) {
       errors.push(`${where} («${label}»): minShiftHours должен быть > 0`);
     }
     if (machine?.status !== undefined && !MACHINE_STATUSES.includes(machine.status)) {
-      errors.push(`${where}.status: допустимо «available» или «busy»`);
+      errors.push(`${where}.status: допустимо ${MACHINE_STATUSES.map((s) => `«${s}»`).join(', ')}`);
     }
   });
 

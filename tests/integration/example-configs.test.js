@@ -14,10 +14,11 @@ describe('чистый пример аренды (config/examples/rental.json)',
     expect(templateOf(rental)).toBe('rental');
   });
 
-  it('в парке есть свободная и занятая техника', () => {
+  it('в парке есть все три статуса техники', () => {
     const statuses = rental.machines.map((machine) => machine.status);
     expect(statuses).toContain('available');
     expect(statuses).toContain('busy');
+    expect(statuses).toContain('confirm');
   });
 
   it('каждая машина считает смену', () => {

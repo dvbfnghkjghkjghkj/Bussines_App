@@ -3,7 +3,8 @@
  *
  * В APK токен бота держать нельзя: он извлекается из бинарника и даёт доступ
  * к боту. Поэтому Android открывает чат компании через deep link tg://
- * с уже заполненным текстом, а веб — через share-ссылку t.me.
+ * с уже заполненным текстом, а веб — через ссылку https://t.me/<ник>?text=…
+ * (share-ссылку не используем: она предлагает выбрать любого адресата).
  */
 
 /** Нормализует ник: убирает @, t.me/ и лишние слэши. Пустая строка — не ник. */
@@ -39,6 +40,7 @@ export function buildBookingText({
   when = '',
   priceText = '',
   comment = '',
+  attachNote = '',
 } = {}) {
   const lines = [companyName.trim() ? `${title} — ${companyName.trim()}` : title, ''];
   if (name.trim()) lines.push(`Имя: ${name.trim()}`);
@@ -52,6 +54,7 @@ export function buildBookingText({
   if (when.trim()) lines.push(`Когда: ${when.trim()}`);
   if (priceText.trim()) lines.push(`Цена: ${priceText.trim()}`);
   if (comment.trim()) lines.push(`Комментарий: ${comment.trim()}`);
+  if (attachNote.trim()) lines.push(`Фото: ${attachNote.trim()}`);
   if (lines.length === 2) lines.push('Пользователь не заполнил поля.');
   return lines.join('\n');
 }

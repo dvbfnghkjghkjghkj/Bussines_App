@@ -4,145 +4,209 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f766e" />
-    <meta name="description" content="Запись в барбершоп: услуги, цены, адрес и заявка в Telegram" />
+    <meta name="description" content="Аренда спецтехники с расчётом стоимости и заявкой в Telegram" />
     <title>Загрузка…</title>
     <link rel="icon" href="./logo.svg" type="image/svg+xml" />
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand" href="#top">
-        <img id="logo" class="brand__logo" src="./logo.svg" alt="" width="40" height="40" />
-        <span class="brand__text">
-          <strong id="company-name">Компания</strong>
-          <span id="company-tagline" class="brand__tagline"></span>
-        </span>
-      </a>
-      <a id="header-phone" class="topbar__phone" href="tel:+70000000000">+7 000 000-00-00</a>
-    </header>
+    <div id="client-page">
+      <header class="topbar">
+        <a class="brand" href="#top">
+          <img id="logo" class="brand__logo" src="./logo.svg" alt="" width="40" height="40" />
+          <span class="brand__text">
+            <strong id="company-name">Компания</strong>
+            <span id="company-tagline" class="brand__tagline"></span>
+          </span>
+        </a>
+        <a id="header-phone" class="topbar__phone" href="tel:+70000000000">+7 000 000-00-00</a>
+      </header>
 
-    <main id="top">
-      <section class="hero">
-        <p class="hero__eyebrow" id="hero-eyebrow"></p>
-        <h1 class="hero__title" id="hero-title">Барбершоп</h1>
-        <p class="hero__lead" id="hero-lead"></p>
-        <p class="hero__hours" id="hero-hours"></p>
-        <div class="hero__actions">
-          <a class="button button--primary" id="hero-cta" href="#request">Записаться</a>
-          <a class="button button--ghost" id="hero-telegram" href="#request" hidden>Написать в Telegram</a>
+      <main id="top">
+        <section class="hero">
+          <p class="hero__eyebrow" id="hero-eyebrow"></p>
+          <h1 class="hero__title" id="hero-title">Аренда спецтехники</h1>
+          <p class="hero__lead" id="hero-lead"></p>
+          <p class="hero__hours" id="hero-hours"></p>
+          <div class="hero__actions">
+            <a class="button button--primary" id="hero-cta" href="#request">Рассчитать стоимость</a>
+            <a class="button button--ghost" id="hero-telegram" href="#request" hidden>Написать в Telegram</a>
+          </div>
+          <aside class="promo" id="promo" hidden>
+            <strong class="promo__title" id="promo-title"></strong>
+            <span class="promo__text" id="promo-text"></span>
+          </aside>
+        </section>
+
+        <section class="section" id="services-section" aria-labelledby="services-title" hidden>
+          <div class="section__head">
+            <h2 id="services-title">Услуги и цены</h2>
+            <p class="section__hint" id="services-hint">
+              Цена зависит от уровня мастера. Точную стоимость подтвердим при записи.
+            </p>
+          </div>
+          <div id="services" class="cards"></div>
+        </section>
+
+        <section class="section" id="fleet-section" aria-labelledby="fleet-title" hidden>
+          <div class="section__head">
+            <h2 id="fleet-title">Наш парк</h2>
+            <p class="section__hint" id="fleet-hint">
+              Цены предварительные: точную стоимость подтвердим после уточнения задачи и адреса.
+            </p>
+          </div>
+          <div id="fleet" class="cards"></div>
+        </section>
+
+        <section class="section section--form" id="request" aria-labelledby="request-title">
+          <div class="section__head">
+            <h2 id="request-title">Запись</h2>
+            <p class="section__hint" id="request-hint">Оставьте контакты — подтвердим время в рабочее время барбершопа.</p>
+          </div>
+
+          <form id="request-form" class="calc" novalidate>
+            <div class="calc__fields">
+              <div class="field field--services">
+                <label for="field-name">Имя</label>
+                <input id="field-name" name="name" type="text" autocomplete="name" placeholder="Как к вам обращаться" />
+              </div>
+              <div class="field field--services">
+                <label for="field-phone">Телефон</label>
+                <input id="field-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" />
+              </div>
+              <div class="field field--services">
+                <label for="field-service">Услуга</label>
+                <select id="field-service" name="service"></select>
+              </div>
+              <div class="field field--services">
+                <label for="field-level">Мастер</label>
+                <select id="field-level" name="level"></select>
+              </div>
+
+              <div class="field field--rental" hidden>
+                <label for="field-machine">Выбранная техника</label>
+                <select id="field-machine" name="machine"></select>
+              </div>
+              <div class="field field--rental field--wide" hidden>
+                <label for="field-address">Адрес объекта</label>
+                <input id="field-address" name="address" type="text" placeholder="Екатеринбург, улица, дом" />
+              </div>
+              <div class="field field--rental" hidden>
+                <label for="field-date">Дата начала работ</label>
+                <input id="field-date" name="date" type="date" />
+              </div>
+              <div class="field field--rental" hidden>
+                <label for="field-hours">Количество часов</label>
+                <input id="field-hours" name="hours" type="number" min="1" step="1" value="4" inputmode="numeric" />
+              </div>
+              <div class="field field--rental" hidden>
+                <label for="field-time">Желаемое время подачи</label>
+                <input id="field-time" name="time" type="time" value="09:00" />
+              </div>
+              <div class="field field--rental" hidden>
+                <label for="field-zone">Зона доставки</label>
+                <select id="field-zone" name="zone"></select>
+              </div>
+              <div class="field field--rental field--wide" hidden>
+                <label for="field-photo">Фото объекта</label>
+                <input id="field-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+                <span class="field__hint">Фотографии не отправляются автоматически — приложите их в чате Telegram.</span>
+              </div>
+
+              <div class="field">
+                <label for="field-when">Дата и время</label>
+                <input id="field-when" name="when" type="datetime-local" />
+              </div>
+              <div class="field field--wide">
+                <label for="field-comment">Комментарий</label>
+                <textarea id="field-comment" name="comment" rows="3" placeholder="Пожелания, детали"></textarea>
+              </div>
+            </div>
+
+            <aside class="calc__summary" aria-labelledby="summary-title">
+              <h3 class="summary__title" id="summary-title">Расчёт заказа</h3>
+              <p class="summary__caption">Предварительная стоимость</p>
+              <p class="summary__total" id="summary-total">—</p>
+              <dl class="summary__rows" id="summary-rows" hidden>
+                <div class="summary__row">
+                  <dt>Техника</dt>
+                  <dd id="summary-machine">—</dd>
+                </div>
+                <div class="summary__row">
+                  <dt>Продолжительность</dt>
+                  <dd id="summary-hours">—</dd>
+                </div>
+                <div class="summary__row">
+                  <dt>Стоимость аренды</dt>
+                  <dd id="summary-shift">—</dd>
+                </div>
+                <div class="summary__row">
+                  <dt>Доставка</dt>
+                  <dd id="summary-delivery">—</dd>
+                </div>
+              </dl>
+              <p class="summary__note" id="summary-note" hidden></p>
+              <p id="price-preview" class="price-preview" aria-live="polite"></p>
+              <p id="form-error" class="form__error" role="alert" hidden></p>
+
+              <div class="form__actions">
+                <button class="button button--primary" type="submit">Отправить заявку в Telegram</button>
+                <button class="button button--ghost" id="copy-request" type="button" hidden>
+                  Скопировать заявку
+                </button>
+              </div>
+              <p class="form__note" id="form-note"></p>
+            </aside>
+          </form>
+        </section>
+
+        <section class="section" aria-labelledby="find-title">
+          <div class="section__head">
+            <h2 id="find-title">Как найти</h2>
+          </div>
+          <ul id="find" class="zones"></ul>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="footer__col">
+          <strong id="footer-name">Компания</strong>
+          <span id="footer-address"></span>
         </div>
-        <aside class="promo" id="promo" hidden>
-          <strong class="promo__title" id="promo-title"></strong>
-          <span class="promo__text" id="promo-text"></span>
-        </aside>
-      </section>
+        <div class="footer__col">
+          <span id="footer-hours"></span>
+          <a id="footer-phone" href="tel:+70000000000">+7 000 000-00-00</a>
+          <a id="footer-map" href="#" target="_blank" rel="noopener">Яндекс Карты</a>
+          <a id="owner-link" href="#owner" hidden>Панель владельца</a>
+        </div>
+      </footer>
+    </div>
 
-      <section class="section" id="services-section" aria-labelledby="services-title">
-        <div class="section__head">
-          <h2 id="services-title">Услуги и цены</h2>
-          <p class="section__hint">
-            Цена зависит от уровня мастера. Точную стоимость подтвердим при записи.
+    <main id="owner-page" class="owner" hidden>
+      <header class="owner__head">
+        <div>
+          <p class="owner__eyebrow">Управление парком</p>
+          <h1 class="owner__title">Панель владельца</h1>
+          <p class="owner__hint">
+            Обновляйте стоимость, минимальную смену и доступность техники. Клиентская страница
+            пересчитает стоимость сразу.
           </p>
         </div>
-        <div id="services" class="cards"></div>
-      </section>
+        <a class="button button--ghost" id="owner-back" href="#">Открыть клиентскую страницу</a>
+      </header>
 
-      <section class="section" id="fleet-section" aria-labelledby="fleet-title" hidden>
-        <div class="section__head">
-          <h2 id="fleet-title">Техника</h2>
-          <p class="section__hint">
-            Цены предварительные: точную стоимость подтвердим после уточнения задачи и адреса.
-          </p>
-        </div>
-        <div id="fleet" class="cards"></div>
-      </section>
+      <ul class="owner__stats" id="owner-stats"></ul>
 
-      <section class="section" id="zones-section" aria-labelledby="zones-title" hidden>
-        <div class="section__head">
-          <h2 id="zones-title">Доставка</h2>
-        </div>
-        <ul id="zones" class="zones"></ul>
-      </section>
+      <div class="owner__grid" id="owner-machines"></div>
 
-      <section class="section" aria-labelledby="find-title">
-        <div class="section__head">
-          <h2 id="find-title">Как найти</h2>
-        </div>
-        <ul id="find" class="zones"></ul>
-      </section>
-
-      <section class="section section--form" id="request" aria-labelledby="request-title">
-        <div class="section__head">
-          <h2 id="request-title">Запись</h2>
-          <p class="section__hint" id="request-hint">Оставьте контакты — подтвердим время в рабочее время барбершопа.</p>
-        </div>
-
-        <form id="request-form" class="form" novalidate>
-          <div class="field">
-            <label for="field-name">Имя</label>
-            <input id="field-name" name="name" type="text" autocomplete="name" placeholder="Как к вам обращаться" required />
-          </div>
-          <div class="field">
-            <label for="field-phone">Телефон</label>
-            <input id="field-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" required />
-          </div>
-          <div class="field field--services">
-            <label for="field-service">Услуга</label>
-            <select id="field-service" name="service"></select>
-          </div>
-          <div class="field field--services">
-            <label for="field-level">Мастер</label>
-            <select id="field-level" name="level"></select>
-          </div>
-          <div class="field field--rental" hidden>
-            <label for="field-machine">Техника</label>
-            <select id="field-machine" name="machine"></select>
-          </div>
-          <div class="field field--rental" hidden>
-            <label for="field-hours">Часов</label>
-            <input id="field-hours" name="hours" type="number" min="1" step="1" value="4" inputmode="numeric" />
-          </div>
-          <div class="field field--rental" hidden>
-            <label for="field-zone">Доставка</label>
-            <select id="field-zone" name="zone"></select>
-          </div>
-          <div class="field field--rental field--wide" hidden>
-            <label for="field-address">Адрес объекта</label>
-            <input id="field-address" name="address" type="text" placeholder="Город, улица, дом" />
-          </div>
-          <div class="field">
-            <label for="field-when">Дата и время</label>
-            <input id="field-when" name="when" type="datetime-local" />
-          </div>
-          <div class="field field--wide">
-            <label for="field-comment">Комментарий</label>
-            <textarea id="field-comment" name="comment" rows="3" placeholder="Пожелания, день рождения, детали"></textarea>
-          </div>
-
-          <p id="price-preview" class="price-preview" aria-live="polite"></p>
-          <p id="form-error" class="form__error" role="alert" hidden></p>
-
-          <div class="form__actions">
-            <button class="button button--primary" type="submit">Отправить в Telegram</button>
-            <button class="button button--ghost" id="copy-request" type="button" hidden>
-              Скопировать заявку
-            </button>
-          </div>
-          <p class="form__note" id="form-note"></p>
-        </form>
-      </section>
+      <div class="owner__foot">
+        <p class="owner__note">Цены указаны в рублях. Настройки сохраняются в этом браузере.</p>
+        <button class="button button--ghost" id="owner-reset" type="button">Вернуть значения из конфига</button>
+      </div>
+      <p class="owner__warn">
+        Изменения видят только вы, в этом браузере. Чтобы их увидели клиенты, их нужно перенести
+        в <code>config/company.json</code> и опубликовать заново.
+      </p>
     </main>
-
-    <footer class="footer">
-      <div class="footer__col">
-        <strong id="footer-name">Компания</strong>
-        <span id="footer-address"></span>
-      </div>
-      <div class="footer__col">
-        <span id="footer-hours"></span>
-        <a id="footer-phone" href="tel:+70000000000">+7 000 000-00-00</a>
-        <a id="footer-map" href="#" target="_blank" rel="noopener">Яндекс Карты</a>
-      </div>
-    </footer>
 
     <script type="module" src="/src/main.js"></script>
   </body>
