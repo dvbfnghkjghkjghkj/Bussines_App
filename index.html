@@ -27,7 +27,7 @@
         <p class="hero__lead" id="hero-lead"></p>
         <p class="hero__hours" id="hero-hours"></p>
         <div class="hero__actions">
-          <a class="button button--primary" href="#request">Записаться</a>
+          <a class="button button--primary" id="hero-cta" href="#request">Записаться</a>
           <a class="button button--ghost" id="hero-telegram" href="#request" hidden>Написать в Telegram</a>
         </div>
         <aside class="promo" id="promo" hidden>
@@ -36,7 +36,7 @@
         </aside>
       </section>
 
-      <section class="section" aria-labelledby="services-title">
+      <section class="section" id="services-section" aria-labelledby="services-title">
         <div class="section__head">
           <h2 id="services-title">Услуги и цены</h2>
           <p class="section__hint">
@@ -44,6 +44,23 @@
           </p>
         </div>
         <div id="services" class="cards"></div>
+      </section>
+
+      <section class="section" id="fleet-section" aria-labelledby="fleet-title" hidden>
+        <div class="section__head">
+          <h2 id="fleet-title">Техника</h2>
+          <p class="section__hint">
+            Цены предварительные: точную стоимость подтвердим после уточнения задачи и адреса.
+          </p>
+        </div>
+        <div id="fleet" class="cards"></div>
+      </section>
+
+      <section class="section" id="zones-section" aria-labelledby="zones-title" hidden>
+        <div class="section__head">
+          <h2 id="zones-title">Доставка</h2>
+        </div>
+        <ul id="zones" class="zones"></ul>
       </section>
 
       <section class="section" aria-labelledby="find-title">
@@ -56,7 +73,7 @@
       <section class="section section--form" id="request" aria-labelledby="request-title">
         <div class="section__head">
           <h2 id="request-title">Запись</h2>
-          <p class="section__hint">Оставьте контакты — подтвердим время в рабочее время барбершопа.</p>
+          <p class="section__hint" id="request-hint">Оставьте контакты — подтвердим время в рабочее время барбершопа.</p>
         </div>
 
         <form id="request-form" class="form" novalidate>
@@ -68,13 +85,29 @@
             <label for="field-phone">Телефон</label>
             <input id="field-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" required />
           </div>
-          <div class="field">
+          <div class="field field--services">
             <label for="field-service">Услуга</label>
             <select id="field-service" name="service"></select>
           </div>
-          <div class="field">
+          <div class="field field--services">
             <label for="field-level">Мастер</label>
             <select id="field-level" name="level"></select>
+          </div>
+          <div class="field field--rental" hidden>
+            <label for="field-machine">Техника</label>
+            <select id="field-machine" name="machine"></select>
+          </div>
+          <div class="field field--rental" hidden>
+            <label for="field-hours">Часов</label>
+            <input id="field-hours" name="hours" type="number" min="1" step="1" value="4" inputmode="numeric" />
+          </div>
+          <div class="field field--rental" hidden>
+            <label for="field-zone">Доставка</label>
+            <select id="field-zone" name="zone"></select>
+          </div>
+          <div class="field field--rental field--wide" hidden>
+            <label for="field-address">Адрес объекта</label>
+            <input id="field-address" name="address" type="text" placeholder="Город, улица, дом" />
           </div>
           <div class="field">
             <label for="field-when">Дата и время</label>

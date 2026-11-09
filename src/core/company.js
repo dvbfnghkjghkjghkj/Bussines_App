@@ -9,7 +9,17 @@ export const company = rawConfig;
 
 export const APP_ID_PATTERN = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 
+/** Тип шаблона: сфера услуг или аренда техники. */
+export const TEMPLATES = ['services', 'rental'];
+
 const TELEGRAM_HOSTS = ['t.me', 'telegram.me', 'telegram.dog'];
+const MACHINE_STATUSES = ['available', 'busy'];
+
+/** Тип шаблона из конфига; неизвестное значение считается «услуги». */
+export function templateOf(config = rawConfig) {
+  const value = String(config?.template ?? 'services').trim();
+  return TEMPLATES.includes(value) ? value : 'services';
+}
 
 /**
  * Проверяет конфиг компании. Возвращает список ошибок (пустой — всё в порядке).
@@ -20,6 +30,10 @@ export function validateCompany(config = rawConfig) {
 
   if (!config || typeof config !== 'object') {
     return ['config/company.json: файл пуст или это не объект'];
+  }
+
+  if (config.template !== undefined && !TEMPLATES.includes(config.template)) {
+    errors.push(`template: допустимо ${TEMPLATES.map((name) => `«${name}»`).join(' или ')}`);
   }
 
   if (!isNonEmptyString(config.companyName)) {
@@ -34,49 +48,10 @@ export function validateCompany(config = rawConfig) {
     errors.push('contacts.address: обязательный адрес — по нему клиент едет');
   }
 
-  if (!Array.isArray(config.levels) || config.levels.length === 0) {
-    errors.push('levels: нужен хотя бы один уровень мастера');
+  if (templateOf(config) === 'services') {
+    validateServices(config, errors);
   } else {
-    config.levels.forEach((level, index) => {
-      const where = `levels[${index}]`;
-      if (!isNonEmptyString(level?.id)) errors.push(`${where}.id: обязательное поле`);
-      if (!isNonEmptyString(level?.name)) errors.push(`${where}.name: обязательное поле`);
-    });
-  }
-
-  if (!Array.isArray(config.services) || config.services.length === 0) {
-    errors.push('services: нужна хотя бы одна услуга');
-  } else {
-    const seen = new Set();
-    config.services.forEach((service, index) => {
-      const where = `services[${index}]`;
-      const label = isNonEmptyString(service?.name) ? service.name : `№${index + 1}`;
-
-      if (!isNonEmptyString(service?.id)) errors.push(`${where}.id: обязательное поле`);
-      if (!isNonEmptyString(service?.name)) errors.push(`${where}.name: обязательное поле`);
-      if (isNonEmptyString(service?.id)) {
-        if (seen.has(service.id)) errors.push(`${where}.id: повторяется («${service.id}»)`);
-        seen.add(service.id);
-      }
-
-      const prices = service?.prices ?? {};
-      for (const [levelId, value] of Object.entries(prices)) {
-        if (!isFiniteNumber(value) || value < 0) {
-          errors.push(`${where}.prices.${levelId}: цена должна быть числом ≥ 0`);
-        }
-      }
-
-      const hasBase = isFiniteNumber(service?.price) && service.price >= 0;
-      if (Object.keys(prices).length === 0 && !hasBase) {
-        errors.push(`${where} («${label}»): не задана ни одна цена`);
-      }
-
-      if (service?.duration !== undefined) {
-        if (!isFiniteNumber(service.duration) || service.duration <= 0) {
-          errors.push(`${where}.duration: длительность в минутах должна быть > 0`);
-        }
-      }
-    });
+    validateRental(config, errors);
   }
 
   if (config.app) {
@@ -89,6 +64,106 @@ export function validateCompany(config = rawConfig) {
   }
 
   return errors;
+}
+
+function validateServices(config, errors) {
+  if (!Array.isArray(config.levels) || config.levels.length === 0) {
+    errors.push('levels: нужен хотя бы один уровень мастера');
+  } else {
+    config.levels.forEach((level, index) => {
+      const where = `levels[${index}]`;
+      if (!isNonEmptyString(level?.id)) errors.push(`${where}.id: обязательное поле`);
+      if (!isNonEmptyString(level?.name)) errors.push(`${where}.name: обязательное поле`);
+    });
+  }
+
+  if (!Array.isArray(config.services) || config.services.length === 0) {
+    errors.push('services: нужна хотя бы одна услуга');
+    return;
+  }
+
+  const seen = new Set();
+  config.services.forEach((service, index) => {
+    const where = `services[${index}]`;
+    const label = isNonEmptyString(service?.name) ? service.name : `№${index + 1}`;
+
+    if (!isNonEmptyString(service?.id)) errors.push(`${where}.id: обязательное поле`);
+    if (!isNonEmptyString(service?.name)) errors.push(`${where}.name: обязательное поле`);
+    if (isNonEmptyString(service?.id)) {
+      if (seen.has(service.id)) errors.push(`${where}.id: повторяется («${service.id}»)`);
+      seen.add(service.id);
+    }
+
+    const prices = service?.prices ?? {};
+    for (const [levelId, value] of Object.entries(prices)) {
+      if (!isFiniteNumber(value) || value < 0) {
+        errors.push(`${where}.prices.${levelId}: цена должна быть числом ≥ 0`);
+      }
+    }
+
+    const hasBase = isFiniteNumber(service?.price) && service.price >= 0;
+    if (Object.keys(prices).length === 0 && !hasBase) {
+      errors.push(`${where} («${label}»): не задана ни одна цена`);
+    }
+
+    if (service?.duration !== undefined) {
+      if (!isFiniteNumber(service.duration) || service.duration <= 0) {
+        errors.push(`${where}.duration: длительность в минутах должна быть > 0`);
+      }
+    }
+  });
+}
+
+function validateRental(config, errors) {
+  if (!Array.isArray(config.machines) || config.machines.length === 0) {
+    errors.push('machines: нужна хотя бы одна единица техники');
+    return;
+  }
+
+  const seen = new Set();
+  config.machines.forEach((machine, index) => {
+    const where = `machines[${index}]`;
+    const label = isNonEmptyString(machine?.name) ? machine.name : `№${index + 1}`;
+
+    if (!isNonEmptyString(machine?.id)) errors.push(`${where}.id: обязательное поле`);
+    if (!isNonEmptyString(machine?.name)) errors.push(`${where}.name: обязательное поле`);
+    if (isNonEmptyString(machine?.id)) {
+      if (seen.has(machine.id)) errors.push(`${where}.id: повторяется («${machine.id}»)`);
+      seen.add(machine.id);
+    }
+
+    if (!isFiniteNumber(machine?.ratePerHour) || machine.ratePerHour < 0) {
+      errors.push(`${where} («${label}»): ratePerHour должен быть числом ≥ 0`);
+    }
+    if (!isFiniteNumber(machine?.minShiftHours) || machine.minShiftHours <= 0) {
+      errors.push(`${where} («${label}»): minShiftHours должен быть > 0`);
+    }
+    if (machine?.status !== undefined && !MACHINE_STATUSES.includes(machine.status)) {
+      errors.push(`${where}.status: допустимо «available» или «busy»`);
+    }
+  });
+
+  if (!Array.isArray(config.deliveryZones)) {
+    errors.push('deliveryZones: обязательный массив (может быть пустым)');
+    return;
+  }
+
+  const zoneIds = new Set();
+  config.deliveryZones.forEach((zone, index) => {
+    const where = `deliveryZones[${index}]`;
+    if (!isNonEmptyString(zone?.id)) errors.push(`${where}.id: обязательное поле`);
+    if (!isNonEmptyString(zone?.name)) errors.push(`${where}.name: обязательное поле`);
+    if (isNonEmptyString(zone?.id)) {
+      if (zoneIds.has(zone.id)) errors.push(`${where}.id: повторяется («${zone.id}»)`);
+      zoneIds.add(zone.id);
+    }
+    if (!isFiniteNumber(zone?.price) || zone.price < 0) {
+      errors.push(`${where}.price: стоимость доставки — число ≥ 0`);
+    }
+    if (zone?.freeFrom !== undefined && (!isFiniteNumber(zone.freeFrom) || zone.freeFrom < 0)) {
+      errors.push(`${where}.freeFrom: порог бесплатной доставки — число ≥ 0`);
+    }
+  });
 }
 
 /** Отдаёт конфиг и бросает ошибку, если он невалиден. */
@@ -108,6 +183,16 @@ export function findService(id, config = rawConfig) {
 /** Ищет уровень мастера по id. */
 export function findLevel(id, config = rawConfig) {
   return (config.levels ?? []).find((level) => level.id === id) ?? null;
+}
+
+/** Ищет единицу техники по id. */
+export function findMachine(id, config = rawConfig) {
+  return (config.machines ?? []).find((machine) => machine.id === id) ?? null;
+}
+
+/** Ищет зону доставки по id. */
+export function findZone(id, config = rawConfig) {
+  return (config.deliveryZones ?? []).find((zone) => zone.id === id) ?? null;
 }
 
 /**

@@ -1,16 +1,20 @@
 /**
- * Цены и длительность услуг.
+ * Цены и длительность.
+ *
+ * Два набора функций под два типа шаблона:
+ * - услуги: цена зависит от уровня мастера (`priceForLevel`);
+ * - аренда: часы × ставка с минимальной сменой плюс доставка (`orderPriceRange`).
  *
  * Чистые функции без DOM: используются на странице, в тестах и при сборке
- * текста заявки. Цена зависит от уровня мастера (Барбер / ТОП / ПРЕМИУМ),
- * услуги без уровня имеют одну цену в поле `price`.
+ * текста заявки. Некорректные значения превращаются в null, а не в «NaN ₽».
  */
 
 export const CURRENCY = '₽';
+export const DEFAULT_MIN_SHIFT_HOURS = 4;
 
 /**
  * «1 800 ₽» с неразрывным пробелом — цена не рвётся по строкам.
- * Некорректное значение превращается в пустую строку, а не в «NaN ₽».
+ * Некорректное значение превращается в пустую строку.
  */
 export function formatPrice(value, currency = CURRENCY) {
   const number = toNonNegative(value);
@@ -21,7 +25,6 @@ export function formatPrice(value, currency = CURRENCY) {
 /**
  * Предварительная цена диапазоном — требование проекта: никаких точных
  * обещаний. Границы можно передать в любом порядке, минимум берётся сам.
- * (1500, 2200) → «1 500 – 2 200 ₽»; (1500, 1500) → «1 500 ₽».
  */
 export function formatPriceRange(from, to, currency = CURRENCY) {
   const a = toNonNegative(from);
@@ -48,6 +51,15 @@ export function formatDuration(minutes) {
   const rest = total % 60;
   return rest === 0 ? `${hours}\u00A0ч` : `${hours}\u00A0ч ${rest}\u00A0мин`;
 }
+
+/** Часы смены: 4 → «4 ч». */
+export function formatHours(hours) {
+  const value = toNonNegative(hours);
+  if (value === null) return '';
+  return `${new Intl.NumberFormat('ru-RU').format(value)}\u00A0ч`;
+}
+
+// ---- услуги ----
 
 /** Все известные цены услуги: из карты уровней или единая цена. */
 export function servicePrices(service) {
@@ -83,6 +95,67 @@ export function formatServicePrice(service, currency = CURRENCY) {
   const range = priceRange(service);
   if (!range) return 'цена по запросу';
   return formatPriceRange(range.min, range.max, currency);
+}
+
+// ---- аренда техники ----
+
+/**
+ * Стоимость смены: часы округляются вверх до минимальной смены.
+ * hours ≤ 0 → null (смену не считаем), иначе — максимум из часов и минимума.
+ */
+export function calcShiftPrice({ ratePerHour, hours, minShiftHours = DEFAULT_MIN_SHIFT_HOURS } = {}) {
+  const rate = toNonNegative(ratePerHour);
+  const min = toNonNegative(minShiftHours);
+  const value = toNonNegative(hours);
+  if (rate === null || min === null || value === null) return null;
+  if (value === 0) return null;
+
+  return Math.round(Math.max(value, min) * rate);
+}
+
+/**
+ * Доставка по зоне: бесплатно, если сумма заказа дошла до порога `freeFrom`.
+ * Без зоны доставка не считается (0).
+ */
+export function deliveryPrice(zone, subtotal = 0) {
+  if (!zone) return 0;
+  const price = toNonNegative(zone.price) ?? 0;
+  const threshold = toNonNegative(zone.freeFrom) ?? 0;
+  const sum = toNonNegative(subtotal) ?? 0;
+  if (threshold > 0 && sum >= threshold) return 0;
+  return price;
+}
+
+/**
+ * Итог заказа: смена + доставка.
+ * Возвращает { shift, delivery, total } или null, если часы не заданы.
+ */
+export function orderTotal({ machine, hours, zone } = {}) {
+  const shift = calcShiftPrice({ ...machine, hours });
+  if (shift === null) return null;
+  const delivery = deliveryPrice(zone, shift);
+  return { shift, delivery, total: shift + delivery };
+}
+
+/**
+ * Диапазон предварительной стоимости: от минимальной смены до запрошенных часов.
+ * Если часов меньше минимума — диапазон схлопывается в одну цену.
+ */
+export function orderPriceRange({ machine, hours, zone } = {}) {
+  const rate = toNonNegative(machine?.ratePerHour);
+  const minShift = toNonNegative(machine?.minShiftHours) ?? DEFAULT_MIN_SHIFT_HOURS;
+  if (rate === null || rate === 0) return null;
+
+  const fromHours = Math.max(1, minShift);
+  const requested = toNonNegative(hours) ?? 0;
+  const toHours = Math.max(requested, fromHours);
+
+  const fromShift = Math.round(fromHours * rate);
+  const toShift = Math.round(toHours * rate);
+
+  const fromTotal = fromShift + deliveryPrice(zone, fromShift);
+  const toTotal = toShift + deliveryPrice(zone, toShift);
+  return { min: Math.min(fromTotal, toTotal), max: Math.max(fromTotal, toTotal) };
 }
 
 function toNonNegative(value) {

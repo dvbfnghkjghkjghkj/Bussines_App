@@ -24,13 +24,17 @@ export function normalizeUsername(raw) {
   return /^[A-Za-z0-9_]{4,32}$/.test(value) ? value : '';
 }
 
-/** Текст заявки на запись. Пустые строки выбрасываем, чтобы не было «— undefined». */
+/** Текст заявки. Пустые строки выбрасываем, чтобы не было «— undefined». */
 export function buildBookingText({
   companyName = '',
   name = '',
   phone = '',
   serviceName = '',
   levelName = '',
+  machineName = '',
+  hours = '',
+  address = '',
+  zoneName = '',
   when = '',
   priceText = '',
   comment = '',
@@ -40,6 +44,10 @@ export function buildBookingText({
   if (phone.trim()) lines.push(`Телефон: ${phone.trim()}`);
   if (serviceName.trim()) lines.push(`Услуга: ${serviceName.trim()}`);
   if (levelName.trim()) lines.push(`Мастер: ${levelName.trim()}`);
+  if (machineName.trim()) lines.push(`Техника: ${machineName.trim()}`);
+  if (String(hours).trim()) lines.push(`Часов: ${String(hours).trim()}`);
+  if (address.trim()) lines.push(`Адрес: ${address.trim()}`);
+  if (zoneName.trim()) lines.push(`Доставка: ${zoneName.trim()}`);
   if (when.trim()) lines.push(`Когда: ${when.trim()}`);
   if (priceText.trim()) lines.push(`Цена: ${priceText.trim()}`);
   if (comment.trim()) lines.push(`Комментарий: ${comment.trim()}`);
