@@ -19,6 +19,7 @@
     "test:watch": "vitest --configLoader native",
     "test:e2e": "playwright test",
     "lint": "eslint .",
+    "icons": "node scripts/gen-icons.mjs",
     "android:config": "node scripts/gen-android-config.mjs",
     "android:sync": "npm run android:config && npm run build && cap sync android",
     "android:open": "cap open android",

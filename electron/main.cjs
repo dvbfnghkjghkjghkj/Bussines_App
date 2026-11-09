@@ -13,6 +13,7 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     title: app.getName(),
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

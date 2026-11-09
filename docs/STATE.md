@@ -31,6 +31,21 @@
   `Demo` упал на `configure-pages`: Pages не был включён.
 - Все workflow переведены на Node 22, в `package.json` добавлено
   `engines.node >= 22.12.0`.
+- Первый полностью зелёный прогон на GitHub: `CI` ✅, `Windows Installer` ✅
+  (установщик 109.7 МБ), `Android APK` ✅ (debug APK 3.6 МБ),
+  `Demo (GitHub Pages)` ✅ — сайт на
+  https://dvbfnghkjghkjghkj.github.io/Bussines_App/
+- Демо проверено в браузере: данные из конфига подставляются, плашка
+  «Демо-версия» на месте, отправка отключена, ссылка Telegram скрыта,
+  логотип загружается.
+- Инцидент GitHub 18:14–18:48 UTC ронял запуски с `Internal server error`
+  (0 job'ов, пустые логи); после восстановления платформы деплой прошёл.
+- Pages включён через API (`build_type: workflow`), временный токен после
+  настройки удалён.
+- Иконки и splash: `scripts/gen-icons.mjs` (sharp) собирает `resources/*.png`
+  и `build/icon.ico` из `public/logo.svg`; Android получил 123 ресурса через
+  `@capacitor/assets`, иконка подключена к exe и установщику
+  (`SetupIconFile`, `win.icon`).
 
 ## В работе
 
@@ -41,8 +56,6 @@
 - Заполнить реальные данные в `config/company.json` (название, контакты,
   Telegram-ник, цены, зоны доставки) — от них зависят имена APK и установщика.
 - Завести первые файлы в `knowledge/` и прогнать «изучи knowledge».
-- Иконка и splash: `resources/icon.png`, `npx @capacitor/assets generate --android`;
-  иконка окна/установщика для ПК (`build/icon.ico`).
 - Инициализировать git, запушить репозиторий, включить Pages
   (Settings → Pages → GitHub Actions).
 - Прогнать в CI: APK, установщик Windows, деплой демо. Локально Electron-пакет

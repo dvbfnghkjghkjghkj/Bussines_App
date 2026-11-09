@@ -34,13 +34,15 @@ npm run build        # → dist/
 .dsh/            инструкции и скиллы агента
 .github/         CI: проверки, APK, установщик Windows, демо на Pages
 android/         нативный проект Capacitor
+build/           icon.ico для exe и установщика (генерируется)
 config/          company.json — единственный источник данных компании
 docs/            PROJECT, CONVENTIONS, STATE, DECISIONS, MOBILE, DESKTOP, DEMO
 electron/        оболочка ПК-версии (main.cjs)
 installer/       шаблон установщика Inno Setup
 knowledge/       база знаний (не менять без подтверждения)
 public/          логотип, фото техники
-scripts/         генерация Android-конфига, сборка APK и установщика
+resources/       icon.png, splash.png для Android (генерируются)
+scripts/         генерация иконок и Android-конфига, сборка APK и установщика
 src/             core/ (конфиг, цены, Telegram) + main.js + style.css
 tests/           unit / integration / e2e
 ```
@@ -55,6 +57,7 @@ tests/           unit / integration / e2e
 | `npm test` | Vitest: юнит + интеграция + property-based |
 | `npm run test:e2e` | Playwright (нужны браузеры: `npx playwright install`) |
 | `npm run lint` | ESLint |
+| `npm run icons` | Иконки и splash из `public/logo.svg` |
 | `npm run android:config` | Синхронизация `appId`/`appName`/версии в Android |
 | `npm run android:sync` | build + `cap sync android` |
 | `npm run android:apk` | Сборка debug APK |

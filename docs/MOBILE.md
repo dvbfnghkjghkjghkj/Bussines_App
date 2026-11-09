@@ -123,12 +123,18 @@ keytool -genkeypair -v -keystore release.keystore -alias company \
 
 ## Иконка и заставка
 
-Положите `resources/icon.png` (1024×1024) и `resources/splash.png` (2732×2732),
-затем:
+Источник правды один — `public/logo.svg`. Из него генерируются все размеры:
 
 ```bash
+npm run icons                          # resources/*.png + build/icon.ico
 npx @capacitor/assets generate --android
 ```
+
+`scripts/gen-icons.mjs` (sharp) собирает `resources/icon.png` 1024×1024,
+`icon-foreground.png` и `icon-background.png` для adaptive icon,
+`splash.png` 2732×2732 в брендовом цвете `#0f766e`. PNG руками не правьте:
+меняйте SVG и перегенерируйте. Вторая команда раскладывает результат по
+`mipmap-*` и `drawable-*` в `android/` — 123 файла, они коммитятся.
 
 Без этого остаётся стандартная иконка Capacitor — для тестового APK допустимо,
 для клиента нет.

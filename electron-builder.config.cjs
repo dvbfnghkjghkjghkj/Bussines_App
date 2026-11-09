@@ -18,11 +18,12 @@ module.exports = {
     output: 'release',
     buildResources: 'build',
   },
-  files: ['dist/**/*', 'electron/**/*', 'package.json', '!node_modules/**/*'],
+  files: ['dist/**/*', 'electron/**/*', 'build/icon.ico', 'package.json', '!node_modules/**/*'],
   asar: true,
   compression: 'maximum',
   win: {
     target: [{ target: 'dir', arch: ['x64'] }],
+    icon: 'build/icon.ico',
     artifactName: `${executableName}-${appConfig.versionName ?? '0.0.0'}-\${arch}.\${ext}`,
   },
 };

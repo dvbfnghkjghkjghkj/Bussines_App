@@ -51,6 +51,20 @@ src/ + config/company.json
 `scripts/build-installer.mjs` генерирует `installer/setup.generated.iss`
 из шаблона и вызывает ISCC. Сгенерированный файл в репозиторий не попадает.
 
+## Иконка
+
+`build/icon.ico` собирается из того же логотипа, что Android и веб:
+
+```bash
+npm run icons        # build/icon.ico, 7 кадров 16–256 px
+```
+
+Иконка попадает в три места: сам exe (`win.icon` в конфиге electron-builder),
+ярлыки «Пуск»/рабочий стол (наследуются от exe) и установщик
+(`SetupIconFile` в `setup.iss.template`). ICO собирается скриптом вручную —
+контейнер с PNG-кадрами, который понимает Windows Vista и новее, без
+внешних утилит.
+
 ## Что умеет окно
 
 - Загружает `dist/index.html` через `file://` — без локального сервера.
