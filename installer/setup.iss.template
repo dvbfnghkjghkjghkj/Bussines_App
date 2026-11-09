@@ -1,0 +1,60 @@
+; ============================================================================
+;  Установщик ПК-версии (Windows, Inno Setup 6).
+;
+;  Шаблон: {{...}} подставляет scripts/build-installer.mjs из config/company.json.
+;  Компилировать setup.generated.iss, а не этот файл.
+;
+;  Конвенции те же, что у остальных проектов: установка без прав администратора
+;  в %LOCALAPPDATA%\Programs, русский мастер, ярлык в меню «Пуск» и опционально
+;  на рабочем столе.
+; ============================================================================
+
+#define MyAppId "{{APP_ID}}"
+#define MyAppName "{{APP_NAME}}"
+#define MyAppVersion "{{VERSION}}"
+#define MyAppExeName "{{EXE_NAME}}"
+
+[Setup]
+AppId={#MyAppId}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppName}
+DefaultDirName={localappdata}\Programs\{#MyAppName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+OutputDir=output
+OutputBaseFilename={#MyAppId}-setup-{#MyAppVersion}
+UninstallDisplayIcon={app}\{#MyAppExeName}
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+VersionInfoVersion={{VERSION_INFO}}
+VersionInfoDescription={#MyAppName} — установщик
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+CloseApplications=yes
+
+[Languages]
+Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "Создать ярлык на рабочем столе"; GroupDescription: "Дополнительно:"
+
+[Files]
+Source: "{{PAYLOAD_DIR}}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Comment: "{#MyAppName}"
+Name: "{group}\Папка приложения"; Filename: "{app}"
+Name: "{group}\Удалить {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "Запустить {#MyAppName}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}"

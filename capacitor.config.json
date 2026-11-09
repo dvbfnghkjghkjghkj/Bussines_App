@@ -1,0 +1,11 @@
+{
+  "appId": "ru.example.businessapp",
+  "appName": "Бизнес-приложение",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

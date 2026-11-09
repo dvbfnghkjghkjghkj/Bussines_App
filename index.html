@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="description" content="Одностраничное бизнес-приложение: услуги, техника, заявка в Telegram" />
+    <title>Загрузка…</title>
+    <link rel="icon" href="./logo.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top">
+        <img id="logo" class="brand__logo" src="./logo.svg" alt="" width="40" height="40" />
+        <span class="brand__text">
+          <strong id="company-name">Компания</strong>
+          <span id="company-tagline" class="brand__tagline"></span>
+        </span>
+      </a>
+      <a id="header-phone" class="topbar__phone" href="tel:+70000000000">+7 000 000-00-00</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="hero__eyebrow" id="hero-hours"></p>
+        <h1 class="hero__title" id="hero-title">Услуги компании</h1>
+        <p class="hero__lead" id="hero-lead"></p>
+        <div class="hero__actions">
+          <a class="button button--primary" href="#request">Оставить заявку</a>
+          <a class="button button--ghost" id="hero-telegram" href="#request">Написать в Telegram</a>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="machines-title">
+        <div class="section__head">
+          <h2 id="machines-title">Техника и услуги</h2>
+          <p class="section__hint">Цены предварительные, точная стоимость — после уточнения задачи.</p>
+        </div>
+        <div id="machines" class="cards"></div>
+      </section>
+
+      <section class="section" id="zones-section" aria-labelledby="zones-title" hidden>
+        <div class="section__head">
+          <h2 id="zones-title">Доставка</h2>
+        </div>
+        <ul id="zones" class="zones"></ul>
+      </section>
+
+      <section class="section section--form" id="request" aria-labelledby="request-title">
+        <div class="section__head">
+          <h2 id="request-title">Заявка</h2>
+          <p class="section__hint">Ответим в рабочее время, обычно в течение часа.</p>
+        </div>
+
+        <form id="request-form" class="form" novalidate>
+          <div class="field">
+            <label for="field-name">Имя</label>
+            <input id="field-name" name="name" type="text" autocomplete="name" placeholder="Как к вам обращаться" required />
+          </div>
+          <div class="field">
+            <label for="field-phone">Телефон</label>
+            <input id="field-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 ___ ___-__-__" required />
+          </div>
+          <div class="field">
+            <label for="field-machine">Техника</label>
+            <select id="field-machine" name="machine"></select>
+          </div>
+          <div class="field">
+            <label for="field-hours">Часов</label>
+            <input id="field-hours" name="hours" type="number" min="1" step="1" value="4" inputmode="numeric" />
+          </div>
+          <div class="field field--wide">
+            <label for="field-comment">Комментарий</label>
+            <textarea id="field-comment" name="comment" rows="3" placeholder="Адрес, даты, задача"></textarea>
+          </div>
+
+          <p id="price-preview" class="price-preview" aria-live="polite"></p>
+          <p id="form-error" class="form__error" role="alert" hidden></p>
+
+          <div class="form__actions">
+            <button class="button button--primary" type="submit">Отправить в Telegram</button>
+            <button class="button button--ghost" id="copy-request" type="button" hidden>
+              Скопировать заявку
+            </button>
+          </div>
+          <p class="form__note" id="form-note"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__col">
+        <strong id="footer-name">Компания</strong>
+        <span id="footer-address"></span>
+      </div>
+      <div class="footer__col">
+        <span id="footer-hours"></span>
+        <a id="footer-phone" href="tel:+70000000000">+7 000 000-00-00</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

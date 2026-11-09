@@ -1,0 +1,35 @@
+node_modules/
+dist/
+dist-demo/
+.env
+.DS_Store
+*.log
+
+# Артефакты тестов и кэш инструментов
+coverage/
+playwright-report/
+test-results/
+.vite/
+.npm-cache/
+.electron-cache/
+
+# Desktop: Electron + Inno Setup
+release/
+installer/output/
+installer/setup.generated.iss
+
+# Android / Capacitor
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/app/release.keystore
+android/app/debug.keystore
+*.jks
+*.keystore
+*.apk
+*.aab
+
+# iOS остаётся на будущее
+ios/App/Pods/
+ios/App/build/

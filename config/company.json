@@ -1,0 +1,41 @@
+{
+  "companyName": "Название компании",
+  "logo": "logo.svg",
+  "tagline": "Короткий слоган компании",
+  "contacts": {
+    "phone": "+7 000 000-00-00",
+    "whatsapp": "",
+    "telegram": "",
+    "email": "",
+    "address": "Город, улица, дом",
+    "workingHours": "Ежедневно 09:00–20:00"
+  },
+  "telegramChatId": "",
+  "app": {
+    "appId": "ru.example.businessapp",
+    "appName": "Бизнес-приложение",
+    "versionCode": 1,
+    "versionName": "0.1.0"
+  },
+  "deliveryZones": [
+    {
+      "id": "zone-center",
+      "name": "Центр",
+      "price": 0,
+      "freeFrom": 0,
+      "note": "Бесплатно при заказе от указанной суммы"
+    }
+  ],
+  "machines": [
+    {
+      "id": "machine-1",
+      "name": "Название единицы техники",
+      "photo": "",
+      "purpose": "Для чего используется",
+      "ratePerHour": 0,
+      "minShiftHours": 4,
+      "delivery": "Доставка по городу — от 0 ₽",
+      "status": "available"
+    }
+  ]
+}

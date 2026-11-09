@@ -1,0 +1,43 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Одностраничное бизнес-приложение: web + Android (Capacitor) + Windows (Electron), персонализация через config/company.json",
+  "main": "electron/main.cjs",
+  "author": "my-app",
+  "scripts": {
+    "dev": "vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "build:demo": "vite build --mode demo --configLoader native",
+    "build:desktop": "vite build --mode desktop --configLoader native",
+    "preview": "vite preview",
+    "test": "vitest run --configLoader native",
+    "test:watch": "vitest --configLoader native",
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "android:config": "node scripts/gen-android-config.mjs",
+    "android:sync": "npm run android:config && npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:apk": "npm run android:sync && node scripts/build-apk.mjs",
+    "desktop:run": "npm run build:desktop && electron .",
+    "desktop:pack": "npm run build:desktop && electron-builder --win dir --config electron-builder.config.cjs",
+    "installer:win": "npm run desktop:pack && node scripts/build-installer.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "eslint": "^10.14.0",
+    "fast-check": "^4.10.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

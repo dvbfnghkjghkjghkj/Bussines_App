@@ -1,0 +1,21 @@
+# Нормализация переносов строк: в репозитории — LF, на Windows
+# bat/ps1 получают CRLF при checkout, иначе ломаются.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Бинарники не трогаем
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.zip binary
+*.exe binary

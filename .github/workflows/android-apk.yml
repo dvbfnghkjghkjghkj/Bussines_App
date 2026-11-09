@@ -1,0 +1,86 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - name: Код
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Кэш Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Зависимости
+        run: npm install --no-audit --no-fund
+
+      - name: Идентификаторы Android из config/company.json
+        run: npm run android:config
+
+      - name: Сборка web-части
+        run: npm run build
+
+      - name: Android-проект (если ещё не в репозитории)
+        run: |
+          if [ ! -f android/app/build.gradle ]; then
+            npx cap add android
+          fi
+
+      - name: Синхронизация ресурсов в Android
+        run: npx cap sync android
+
+      - name: Debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Артефакт debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Подготовить keystore
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
+          echo "ANDROID_KEYSTORE_PATH=release.keystore" >> "$GITHUB_ENV"
+
+      - name: Release APK (подпись, если есть секреты)
+        if: env.KEYSTORE_B64 != ''
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Артефакт release APK
+        if: env.KEYSTORE_B64 != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
