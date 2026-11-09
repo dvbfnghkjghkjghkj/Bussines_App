@@ -30,6 +30,7 @@ import {
 import {
   clearSession,
   cloudConfig,
+  describeAccess,
   fetchPark,
   isSessionFresh,
   readSession,
@@ -500,7 +501,40 @@ function wireOwner() {
     renderOwner();
   });
 
+  $('owner-check')?.addEventListener('click', () => {
+    checkOwnerAccess();
+  });
+
   window.addEventListener('hashchange', route);
+}
+
+/** Показывает, что реально пришло в токене: метку компании и совпадение с конфигом. */
+function checkOwnerAccess() {
+  if (!cloud) {
+    showOwnerMessage('Облако не подключено: правки хранятся только в этом браузере.');
+    return;
+  }
+
+  if (!cloudSession) {
+    showOwnerMessage('Вы не вошли: нажмите «Войти» с e-mail и паролем владельца.');
+    return;
+  }
+
+  const access = describeAccess(cloudSession, cloud.companyId);
+  if (!access) {
+    showOwnerMessage('Не удалось прочитать токен — выйдите и войдите заново.');
+    return;
+  }
+
+  const claim = access.claim || 'нет';
+  const verdict = access.matches
+    ? 'Совпадает — сохранять можно.'
+    : 'Не совпадает с конфигом — запись отклонит политика. Проверьте App Metadata пользователя и войдите заново.';
+
+  showOwnerMessage(
+    `Вы: ${access.email || 'без e-mail'} · роль: ${access.role || 'нет'} · ` +
+      `метка компании в токене: ${claim} · конфиг: ${cloud.companyId}. ${verdict}`,
+  );
 }
 
 /** Тянет парк из Supabase: клиенты должны видеть актуальные цены сразу. */

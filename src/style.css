@@ -842,3 +842,9 @@ main {
   border: 1px solid rgba(15, 118, 110, 0.25);
   border-radius: 12px;
 }
+
+.owner__account-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

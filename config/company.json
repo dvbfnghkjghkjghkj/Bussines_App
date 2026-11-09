@@ -82,7 +82,8 @@
     "Работаем без выходных"
   ],
   "cloud": {
-    "url": "",
-    "anonKey": ""
+    "url": "https://utzhbidxvlbsadicmeyb.supabase.co",
+    "anonKey": "sb_publishable_xaZChRCv73Pfcw5XELqPrA_iPkyEPRD",
+    "companyId": "stroymash"
   }
 }

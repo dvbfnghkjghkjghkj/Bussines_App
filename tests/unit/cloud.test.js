@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   clearSession,
   cloudConfig,
+  decodeTokenPayload,
+  describeAccess,
   fetchPark,
   isSessionFresh,
   patchToRow,
@@ -15,7 +17,7 @@ import {
   writeSession,
 } from '../../src/core/cloud.js';
 
-const CLOUD = { url: 'https://demo.supabase.co', anonKey: 'anon-key' };
+const CLOUD = { url: 'https://demo.supabase.co', anonKey: 'anon-key', companyId: 'stroymash' };
 
 function memoryStorage() {
   const map = new Map();
@@ -43,13 +45,21 @@ describe('cloudConfig', () => {
   it('без настроек возвращает null — страница живёт на конфиге', () => {
     expect(cloudConfig({})).toBeNull();
     expect(cloudConfig({ cloud: {} })).toBeNull();
-    expect(cloudConfig({ cloud: { url: 'https://x.supabase.co', anonKey: '  ' } })).toBeNull();
+    expect(cloudConfig({ cloud: { url: 'https://x.supabase.co', anonKey: '  ', companyId: 'a' } })).toBeNull();
+  });
+
+  it('требует company_id: без него неясно, чей парк показывать', () => {
+    expect(cloudConfig({ cloud: { url: 'https://x.supabase.co', anonKey: 'key' } })).toBeNull();
+    expect(cloudConfig({ cloud: { url: 'https://x.supabase.co', anonKey: 'key', companyId: ' ' } })).toBeNull();
   });
 
   it('чистит пробелы и хвостовой слэш', () => {
-    expect(cloudConfig({ cloud: { url: ' https://x.supabase.co/ ', anonKey: ' key ' } })).toEqual({
+    expect(
+      cloudConfig({ cloud: { url: ' https://x.supabase.co/ ', anonKey: ' key ', companyId: ' stroymash ' } }),
+    ).toEqual({
       url: 'https://x.supabase.co',
       anonKey: 'key',
+      companyId: 'stroymash',
     });
   });
 });
@@ -69,13 +79,20 @@ describe('преобразование строк таблицы', () => {
 
   it('собирает правки по парку', () => {
     const overrides = rowsToOverrides([
-      { id: 'mini-excavator', rate_per_hour: 2600, min_shift_hours: 4, status: 'available' },
+      { company_id: 'stroymash', id: 'mini-excavator', rate_per_hour: 2600, min_shift_hours: 4, status: 'available' },
       { id: '', rate_per_hour: 1 },
       { id: 'manipulator', status: 'confirm' },
     ]);
 
     expect(Object.keys(overrides)).toEqual(['mini-excavator', 'manipulator']);
     expect(overrides.manipulator).toEqual({ status: 'confirm' });
+  });
+
+  it('служебную колонку company_id не считает правкой', () => {
+    expect(rowToPatch({ company_id: 'stroymash' })).toEqual({});
+    expect(rowsToOverrides([{ company_id: 'stroymash', id: 'mini-excavator', status: 'busy' }])).toEqual({
+      'mini-excavator': { status: 'busy' },
+    });
   });
 
   it('пишет правку в snake_case и не отправляет пустоту', () => {
@@ -88,7 +105,7 @@ describe('преобразование строк таблицы', () => {
 });
 
 describe('fetchPark', () => {
-  it('читает парк анонимным ключом', async () => {
+  it('читает парк своей компании и передаёт её в заголовке', async () => {
     const { impl, calls } = recordingFetch(
       jsonResponse([{ id: 'wheel-loader', rate_per_hour: 3500, min_shift_hours: 4, status: 'available' }]),
     );
@@ -100,6 +117,7 @@ describe('fetchPark', () => {
     );
     expect(calls[0].options.headers.apikey).toBe('anon-key');
     expect(calls[0].options.headers.Authorization).toBe('Bearer anon-key');
+    expect(calls[0].options.headers['x-company-id']).toBe('stroymash');
     expect(overrides).toEqual({
       'wheel-loader': { ratePerHour: 3500, minShiftHours: 4, status: 'available' },
     });
@@ -125,7 +143,9 @@ describe('saveMachine', () => {
       status: 'busy',
     }, impl);
 
-    expect(calls[0].url).toBe('https://demo.supabase.co/rest/v1/machines?id=eq.manipulator');
+    expect(calls[0].url).toBe(
+      'https://demo.supabase.co/rest/v1/machines?id=eq.manipulator&company_id=eq.stroymash',
+    );
     expect(calls[0].options.method).toBe('PATCH');
     expect(calls[0].options.headers.Authorization).toBe('Bearer access-token');
     expect(calls[0].options.headers.Prefer).toBe('return=representation');
@@ -148,6 +168,14 @@ describe('saveMachine', () => {
 
     await expect(saveMachine(CLOUD, 'token', 'mini-excavator', { ratePerHour: 1 }, impl)).rejects.toThrow(
       'row-level security',
+    );
+  });
+
+  it('не выдаёт пустой ответ за успех: RLS отфильтровала строку', async () => {
+    const { impl } = recordingFetch(jsonResponse([]));
+
+    await expect(saveMachine(CLOUD, 'token', 'mini-excavator', { ratePerHour: 2600 }, impl)).rejects.toThrow(
+      'company_id',
     );
   });
 });
@@ -240,5 +268,46 @@ describe('сессия в localStorage', () => {
     expect(isSessionFresh({ accessToken: 'a', expiresAt: now + 30_000 }, now)).toBe(false);
     expect(isSessionFresh({ accessToken: 'a', expiresAt: now + 3_600_000 }, now)).toBe(true);
     expect(isSessionFresh(null, now)).toBe(false);
+  });
+});
+
+describe('диагностика прав из токена', () => {
+  const token = (payload) => `header.${globalThis.btoa(JSON.stringify(payload)).replace(/=+$/, '')}.signature`;
+
+  it('читает payload JWT', () => {
+    const payload = { email: 'owner@x.ru', role: 'authenticated', app_metadata: { company_id: 'stroymash' } };
+    expect(decodeTokenPayload(token(payload))).toEqual(payload);
+  });
+
+  it('не падает на мусоре', () => {
+    expect(decodeTokenPayload('нет-двух-точек')).toBeNull();
+    expect(decodeTokenPayload('header.@@@.signature')).toBeNull();
+    expect(decodeTokenPayload(null)).toBeNull();
+  });
+
+  it('показывает совпадение метки с конфигом', () => {
+    const matches = describeAccess(
+      { accessToken: token({ email: 'o@x.ru', role: 'authenticated', app_metadata: { company_id: 'stroymash' } }) },
+      'stroymash',
+    );
+    expect(matches).toEqual({
+      email: 'o@x.ru',
+      role: 'authenticated',
+      claim: 'stroymash',
+      companyId: 'stroymash',
+      matches: true,
+    });
+  });
+
+  it('ловит отсутствующую или чужую метку', () => {
+    const empty = describeAccess({ accessToken: token({ email: 'o@x.ru', role: 'authenticated' }) }, 'stroymash');
+    expect(empty.claim).toBe('');
+    expect(empty.matches).toBe(false);
+
+    const other = describeAccess(
+      { accessToken: token({ app_metadata: { company_id: 'barbershop-x' } }) },
+      'stroymash',
+    );
+    expect(other.matches).toBe(false);
   });
 });

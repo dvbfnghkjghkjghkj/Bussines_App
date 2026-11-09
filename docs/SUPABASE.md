@@ -1,54 +1,59 @@
-# Supabase: парк, который видят все
+# Supabase: один проект на всех клиентов
 
-Страница остаётся статической, но панель владельца пишет цены и статусы в
-Supabase. Клиент читает таблицу анонимным ключом при загрузке, поэтому правки
-видны всем сразу — без пересборки и публикации.
+Статическая страница читает парк из облака, панель владельца пишет туда же.
+Один проект Supabase обслуживает сколько угодно компаний: строки разделены
+колонкой `company_id`, а RLS не даёт увидеть или изменить чужие цены.
 
-Без заполненного блока `cloud` проект работает по-старому: настройки лежат в
+Без заполненного блока `cloud` проект работает по-старому: правки живут в
 `localStorage` браузера владельца (ADR-0012).
 
-## 1. Проект в Supabase
+## Как разделяются клиенты
 
-1. Зарегистрироваться на [supabase.com](https://supabase.com) и создать проект
-   (бесплатный тариф). Регион — ближайший, например Frankfurt.
-2. Записать пароль базы в надёжное место: он нужен для админских задач.
+- сайт компании отправляет заголовок `x-company-id: stroymash`;
+- политика **чтения** отдаёт строки, у которых `company_id` совпадает с
+  заголовком, — клиент видит только свой парк;
+- политика **записи** разрешает вошедшему пользователю менять только строки
+  своей компании: `company_id` берётся из метки пользователя
+  (`app_metadata.company_id`), а не из запроса.
 
-## 2. Схема и политики
+Подделать заголовок клиент может, но это даёт лишь чтение чужих цен, которые
+и так опубликованы на чужом сайте. Записи без входа и без метки не будет.
 
-SQL Editor → New query → вставить целиком и нажать **Run**:
+## 1. Схема (один раз на проект)
+
+SQL Editor → New query → вставить и **Run**:
 
 ```sql
--- Парк техники: одна строка на машину из config/company.json
-create table if not exists public.machines (
-  id text primary key,
+drop table if exists public.machines cascade;
+
+create table public.machines (
+  company_id text not null,
+  id text not null,
   rate_per_hour integer not null check (rate_per_hour >= 0),
   min_shift_hours integer not null check (min_shift_hours > 0),
   status text not null check (status in ('available', 'busy', 'confirm')),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (company_id, id)
 );
 
 alter table public.machines enable row level security;
 
--- Читать может кто угодно: это публичные цены на сайте
-create policy "park: read for everyone"
+-- Чтение: только строки компании из заголовка x-company-id
+create policy "park: read own company"
   on public.machines for select
   to anon, authenticated
-  using (true);
+  using (
+    company_id = (
+      nullif(current_setting('request.headers', true), '')::json ->> 'x-company-id'
+    )
+  );
 
--- Писать может только вошедший владелец
-create policy "park: write for owner"
+-- Запись: только владелец, у которого в app_metadata тот же company_id
+create policy "park: write own company"
   on public.machines for all
   to authenticated
-  using (true)
-  with check (true);
-
--- Стартовые значения совпадают с конфигом
-insert into public.machines (id, rate_per_hour, min_shift_hours, status) values
-  ('mini-excavator',    2500, 4, 'available'),
-  ('crawler-excavator', 3800, 8, 'busy'),
-  ('wheel-loader',      3200, 4, 'available'),
-  ('manipulator',       2800, 4, 'confirm')
-on conflict (id) do nothing;
+  using (company_id = coalesce(auth.jwt() -> 'app_metadata' ->> 'company_id', ''))
+  with check (company_id = coalesce(auth.jwt() -> 'app_metadata' ->> 'company_id', ''));
 
 -- Пометка времени правки
 create or replace function public.touch_updated_at()
@@ -63,66 +68,85 @@ drop trigger if exists machines_touch_updated_at on public.machines;
 create trigger machines_touch_updated_at
   before update on public.machines
   for each row execute function public.touch_updated_at();
+
+-- Первый клиент: СТРОЙМАШ
+insert into public.machines (company_id, id, rate_per_hour, min_shift_hours, status) values
+  ('stroymash', 'mini-excavator',    2500, 4, 'available'),
+  ('stroymash', 'crawler-excavator', 3800, 8, 'busy'),
+  ('stroymash', 'wheel-loader',      3200, 4, 'available'),
+  ('stroymash', 'manipulator',       2800, 4, 'confirm');
 ```
 
-Идентификаторы в `insert` должны совпадать с `machines[].id` в
-`config/company.json` — по ним же идёт запись.
+`drop table` в начале — потому что таблица от первой версии (без `company_id`)
+данных клиентов не содержит. Когда появятся реальные заказчики, вместо него
+пишут `alter table ... add column company_id text not null default ...`.
 
-## 3. Владелец
+## 2. Ключи в конфиг
 
-Authentication → Users → **Add user**:
-
-- e-mail владельца, пароль;
-- включить **Auto Confirm User** (иначе Supabase ждёт письма, а почту в
-  проекте настраивать не обязательно).
-
-Регистрация в интерфейсе не нужна: пользователь создаётся вручную, в панели он
-просто входит по этим данным.
-
-## 4. Ключи в конфиг
-
-Project Settings → API:
-
-- **Project URL** → `cloud.url`
-- **anon public** → `cloud.anonKey`
+Project Settings → API Keys → **Publishable key** (или `anon` из вкладки
+Legacy). Кладём в `config/company.json`:
 
 ```json
 "cloud": {
   "url": "https://xxxxxxxx.supabase.co",
-  "anonKey": "eyJhbGciOi..."
+  "anonKey": "sb_publishable_...",
+  "companyId": "stroymash"
 }
 ```
 
-`anonKey` — публичный ключ, он и так уезжает в браузер. Защита держится на RLS:
-без входа запись отклоняется. **Пароль владельца в конфиг не попадает.**
+`anonKey` публичный — он и так уезжает в браузер, защита держится на RLS.
+Пароль владельца в конфиг не попадает никогда.
 
-После заполнения: `npm run build` (или `npm run build:demo`) и публикация как
-обычно.
+## 3. Подключить нового клиента
 
-## 5. Проверка
+Три шага, все в дашборде Supabase:
 
-1. Открыть `#owner` — появится форма входа.
+1. **Строки парка** — SQL Editor:
+
+   ```sql
+   insert into public.machines (company_id, id, rate_per_hour, min_shift_hours, status) values
+     ('barbershop-x', 'machine-1', 2000, 4, 'available');
+   ```
+
+   `id` машин должны совпадать с `machines[].id` в конфиге клиента.
+
+2. **Пользователь владельца** — Authentication → Users → Add user:
+   e-mail, пароль, **Auto Confirm User**.
+
+3. **Метка компании** — у этого пользователя открыть **User metadata**
+   (raw app metadata) и добавить:
+
+   ```json
+   { "company_id": "barbershop-x" }
+   ```
+
+   Без метки владелец войдёт, но не сможет сохранить правки — политика
+   отклонит запись.
+
+4. В конфиге клиента указать `cloud.companyId = "barbershop-x"` и
+   опубликовать сайт.
+
+Один проект, один e-mail владельца на компанию, отдельные строки в базе.
+
+## 4. Проверка
+
+1. Открыть `#owner` → форма входа.
 2. Войти e-mail и паролем владельца.
-3. Поменять цену «Фронтальный погрузчик» на 3500 — сообщение
-   «Сохранено в облаке».
-4. Открыть сайт в другом браузере или на телефоне: в карточке 3 500 ₽/час,
-   итог пересчитан.
+3. Поменять цену → «Сохранено в облаке».
+4. Открыть сайт в другом браузере: цена новая.
+5. Подставить в конфиг чужой `companyId` — цены чужой компании не появятся.
 
-## Как это устроено
+## Как устроено в коде
 
-- `src/core/cloud.js` — четыре запроса обычным `fetch`, без SDK:
-  вход, продление сессии, чтение парка, PATCH одной машины.
-- Токен входа живёт час и лежит в `localStorage`; перед записью он продлевается
-  refresh-токеном.
-- `localStorage` остаётся кэшем: если облако недоступно, страница показывает
-  последние сохранённые значения и данные из конфига.
-- Сброс «вернуть значения из конфига» в облачном режиме скрыт: откат делает
-  владелец вручную в SQL Editor или в панели.
+- `src/core/cloud.js` — вход, продление сессии, чтение парка, PATCH одной
+  машины; всё обычным `fetch`, без SDK.
+- Заголовок `x-company-id` добавляется к каждому запросу.
+- Токен живёт час, продлевается refresh-токеном перед записью.
+- `localStorage` остаётся кэшем и резервом: если облако недоступно, страница
+  показывает конфиг и последние сохранённые значения.
 
 ## Ограничения
 
 - Правки видны клиентам после перезагрузки страницы — realtime не подключён.
-- Нужен интернет: полностью офлайн (ПК-приложение без сети) работает только
-  локальный режим.
-- Это отступление от ТЗ кейса («без сервера и БД»), решение записано в
-  `docs/DECISIONS.md` (ADR-0013).
+- Нужен интернет; офлайн работает только локальный режим.
+- Это отступление от ТЗ кейса («без сервера и БД»), см. ADR-0013 и ADR-0014.

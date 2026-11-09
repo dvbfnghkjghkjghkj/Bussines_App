@@ -1,23 +1,25 @@
 /**
- * Облако Supabase: парк техники хранится в таблице `machines`, клиенты читают
- * её анонимным ключом, а писать может только владелец после входа по e-mail
- * и паролю (RLS-политика «только authenticated»). Схема и политики —
- * в docs/SUPABASE.md.
+ * Облако Supabase: один проект обслуживает всех клиентов.
  *
- * SDK не тянем: нужны четыре запроса, обычного fetch хватает, и бандл
- * не растёт на сотни килобайт ради PATCH одной строки.
+ * Таблица `public.machines` составная: `(company_id, id)`. Читать можно только
+ * строки своей компании — идентификатор приезжает заголовком `x-company-id`
+ * и проверяется RLS-политикой. Писать может лишь вошедший владелец, у которого
+ * в `app_metadata` записан тот же `company_id`.
+ *
+ * SDK не тянем: нужны четыре запроса, обычного fetch хватает.
  */
 
 import { MACHINE_STATUSES } from './company.js';
 
 export const SESSION_STORAGE_KEY = 'stroymash:owner-session:v1';
+export const COMPANY_HEADER = 'x-company-id';
 
 /** Запас перед истечением токена, чтобы не отправлять запрос «в последний миг». */
 const REFRESH_MARGIN_MS = 60_000;
 
 /**
  * Достаёт настройки облака из конфига. Пустые строки — это «облако не
- * подключено», страница работает от конфига и localStorage.
+ * подключено»: страница работает от конфига и localStorage.
  */
 export function cloudConfig(company = {}) {
   const cloud = company?.cloud;
@@ -25,9 +27,10 @@ export function cloudConfig(company = {}) {
 
   const url = typeof cloud.url === 'string' ? cloud.url.trim().replace(/\/+$/, '') : '';
   const anonKey = typeof cloud.anonKey === 'string' ? cloud.anonKey.trim() : '';
-  if (!url || !anonKey) return null;
+  const companyId = typeof cloud.companyId === 'string' ? cloud.companyId.trim() : '';
+  if (!url || !anonKey || !companyId) return null;
 
-  return { url, anonKey };
+  return { url, anonKey, companyId };
 }
 
 // ---- преобразование строк таблицы ----
@@ -117,6 +120,42 @@ export function isSessionFresh(session, now = Date.now()) {
   return session.expiresAt - REFRESH_MARGIN_MS > now;
 }
 
+/**
+ * Разбирает payload JWT без проверки подписи — только для диагностики в панели:
+ * владельцу нужно видеть, какие права реально пришли в токене.
+ */
+export function decodeTokenPayload(token) {
+  if (typeof token !== 'string') return null;
+
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const json = globalThis.atob(padded);
+    const payload = JSON.parse(json);
+    return payload && typeof payload === 'object' ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Короткое человеческое описание прав из токена. */
+export function describeAccess(session, companyId) {
+  const payload = decodeTokenPayload(session?.accessToken);
+  if (!payload) return null;
+
+  const claim = payload.app_metadata?.company_id ?? '';
+  return {
+    email: payload.email ?? session?.email ?? '',
+    role: payload.role ?? '',
+    claim: typeof claim === 'string' ? claim : '',
+    companyId,
+    matches: Boolean(claim) && claim === companyId,
+  };
+}
+
 // ---- запросы ----
 
 async function errorMessage(response) {
@@ -134,6 +173,8 @@ function baseHeaders(cloud, token) {
     apikey: cloud.anonKey,
     Authorization: `Bearer ${token ?? cloud.anonKey}`,
     Accept: 'application/json',
+    // RLS читает этот заголовок и отдаёт строки только этой компании
+    [COMPANY_HEADER]: cloud.companyId,
   };
 }
 
@@ -177,7 +218,7 @@ export async function refreshSession(cloud, session, fetchImpl = globalThis.fetc
   };
 }
 
-/** Публичное чтение парка — анонимный ключ, без входа. */
+/** Публичное чтение парка своей компании — анонимный ключ, без входа. */
 export async function fetchPark(cloud, fetchImpl = globalThis.fetch) {
   const response = await fetchImpl(
     `${cloud.url}/rest/v1/machines?select=id,rate_per_hour,min_shift_hours,status`,
@@ -195,27 +236,28 @@ export async function saveMachine(cloud, accessToken, machineId, patch, fetchImp
   const body = patchToRow(patch);
   if (Object.keys(body).length === 0) return {};
 
-  const response = await fetchImpl(
-    `${cloud.url}/rest/v1/machines?id=eq.${encodeURIComponent(machineId)}`,
-    {
-      method: 'PATCH',
-      headers: {
-        ...baseHeaders(cloud, accessToken),
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(body),
+  const filter = `id=eq.${encodeURIComponent(machineId)}&company_id=eq.${encodeURIComponent(cloud.companyId)}`;
+  const response = await fetchImpl(`${cloud.url}/rest/v1/machines?${filter}`, {
+    method: 'PATCH',
+    headers: {
+      ...baseHeaders(cloud, accessToken),
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
     },
-  );
+    body: JSON.stringify(body),
+  });
 
   if (!response.ok) throw new Error(await errorMessage(response));
 
   const rows = await response.json();
   const row = Array.isArray(rows) ? rows[0] : rows;
-  if (!row) return patchToPatchFallback(patch);
-  return rowToPatch(row);
-}
+  if (!row) {
+    // RLS не бросает ошибку: строка просто не попадает под политику, и приходит
+    // пустой список. Молча «сохранять» в таком случае нельзя.
+    throw new Error(
+      'строка не обновилась — у пользователя нет метки company_id или чужой companyId в конфиге',
+    );
+  }
 
-function patchToPatchFallback(patch) {
-  return rowToPatch(patchToRow(patch));
+  return rowToPatch(row);
 }
