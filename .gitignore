@@ -5,6 +5,10 @@ dist-demo/
 .DS_Store
 *.log
 
+# Локальные секреты: токены, ключи, архивы логов CI
+.secrets/
+logs/
+
 # Артефакты тестов и кэш инструментов
 coverage/
 playwright-report/

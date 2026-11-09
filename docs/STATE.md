@@ -25,6 +25,12 @@
   `windows-installer.yml` (Electron + Inno Setup → `.exe`),
   `pages-demo.yml` (демо на GitHub Pages).
 - Заявки из APK — deep link `tg://`, токен бота в клиентские сборки не попадает.
+- Первый прогон CI на GitHub: `CI` — зелёный, `Windows Installer` — зелёный,
+  собран установщик 109.7 МБ (артефакт `windows-installer`).
+- `Android APK` упал на `npx cap sync`: Capacitor CLI 8 требует Node ≥ 22;
+  `Demo` упал на `configure-pages`: Pages не был включён.
+- Все workflow переведены на Node 22, в `package.json` добавлено
+  `engines.node >= 22.12.0`.
 
 ## В работе
 

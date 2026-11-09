@@ -6,6 +6,9 @@
   "description": "Одностраничное бизнес-приложение: web + Android (Capacitor) + Windows (Electron), персонализация через config/company.json",
   "main": "electron/main.cjs",
   "author": "my-app",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite --configLoader native",
     "build": "vite build --configLoader native",

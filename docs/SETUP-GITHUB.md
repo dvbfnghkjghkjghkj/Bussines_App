@@ -84,6 +84,15 @@ git push --tags
 
 ## Частые проблемы
 
+**`Get Pages site failed. Please verify that the repository has Pages enabled`.**
+Pages не включён. Settings → Pages → Build and deployment → Source:
+**GitHub Actions**. Одна кнопка, после неё деплой проходит.
+
+**`The Capacitor CLI requires NodeJS >=22.0.0`.** В workflow стоит слишком
+старый Node. Нужен 22.12+ (требования Vite 8, Vitest 5, Electron 45,
+Capacitor CLI 8); в CI это `node-version: 22`, локально проверяется
+`node -v`.
+
 **`refusing to merge unrelated histories`.** Репозиторий создан с README —
 создайте пустой или выполните `git pull --allow-unrelated-histories`.
 

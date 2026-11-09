@@ -35,6 +35,8 @@ export default [
       'dist/**',
       'dist-demo/**',
       'android/**',
+      'logs/**',
+      '.secrets/**',
       'node_modules/**',
       '.npm-cache/**',
       'playwright-report/**',
