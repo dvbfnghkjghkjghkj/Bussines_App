@@ -19,7 +19,8 @@ npm run build        # → dist/
 
 | Что | Команда | Результат | Куда отдаём |
 | --- | --- | --- | --- |
-| Демо | `npm run build:demo` | `dist-demo/` | GitHub Pages (CI) |
+| Сайт | `npm run build` | `dist/` | GitHub Pages (CI), хостинг клиента |
+| Демо-витрина | `npm run build:demo` | `dist-demo/` | показать без приёма заявок |
 | Android | `npm run android:apk` | `app-debug.apk` | клиенту на телефон / Google Play |
 | Windows | `npm run installer:win` | `<appId>-setup-<версия>.exe` | клиенту на ПК |
 
@@ -60,7 +61,7 @@ npm run build        # → dist/
 
 ```
 .dsh/            инструкции и скиллы агента
-.github/         CI: проверки, APK, установщик Windows, демо на Pages
+.github/         CI: проверки, APK, установщик Windows, боевой сайт на Pages
 android/         нативный проект Capacitor
 build/           icon.ico для exe и установщика (генерируется)
 config/          company.json — единственный источник данных компании

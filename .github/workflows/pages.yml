@@ -1,4 +1,4 @@
-name: Demo (GitHub Pages)
+name: Сайт (GitHub Pages)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
       - 'public/**'
       - 'vite.config.js'
       - 'package.json'
-      - '.github/workflows/pages-demo.yml'
+      - '.github/workflows/pages.yml'
 
 permissions:
   contents: read
@@ -38,8 +38,8 @@ jobs:
       - name: Зависимости
         run: npm install --no-audit --no-fund
 
-      - name: Демо-сборка
-        run: npm run build:demo
+      - name: Боевая сборка
+        run: npm run build
 
       - name: Настройка Pages
         uses: actions/configure-pages@v5
@@ -47,7 +47,7 @@ jobs:
       - name: Загрузка артефакта
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist-demo
+          path: dist
 
   deploy:
     needs: build

@@ -26,12 +26,14 @@
   отключённая отправка заявок и скрытая ссылка Telegram.
 - CI: `ci.yml` (lint + test + build), `android-apk.yml` (APK артефактом),
   `windows-installer.yml` (Electron + Inno Setup → `.exe`),
-  `pages-demo.yml` (демо на GitHub Pages).
+  `pages.yml` (боевой сайт на GitHub Pages из `dist`).
 - Заявки из APK — deep link `tg://`, токен бота в клиентские сборки не попадает.
 - Первый полностью зелёный прогон на GitHub: `CI` ✅, `Windows Installer` ✅
   (установщик 109.7 МБ), `Android APK` ✅ (debug APK 3.6 МБ),
-  `Demo (GitHub Pages)` ✅ — сайт на
-  https://dvbfnghkjghkjghkj.github.io/Bussines_App/
+  `Сайт (GitHub Pages)` ✅ — https://dvbfnghkjghkjghkj.github.io/Bussines_App/
+- Pages переключён с демо на боевую сборку: сайт читает парк из Supabase,
+  форма и кнопка Telegram работают. Демо-сборка осталась для витрины
+  (`npm run build:demo`, отдельный артефакт).
 - Демо проверено в браузере: данные из конфига подставляются, плашка на месте,
   отправка отключена, ссылка Telegram скрыта, логотип загружается.
 - Инцидент GitHub 18:14–18:48 UTC ронял запуски с `Internal server error`
